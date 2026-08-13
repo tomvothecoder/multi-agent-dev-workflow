@@ -74,4 +74,60 @@ test -e "$TEST_HOME/.copilot/agents/workflow-reviewer.agent.md"
 test ! -e "$TEST_HOME/.copilot/prompts/workflow-review.prompt.md"
 test -e "$TEST_HOME/.copilot/prompts/unrelated.prompt.md"
 
+for tool in codex claude copilot opencode; do
+  SCOPED_HOME="$(mktemp -d)"
+  make -s -C "$ROOT" "install-$tool" HOME="$SCOPED_HOME"
+
+  case "$tool" in
+    codex)
+      test -L "$SCOPED_HOME/.codex/AGENTS.md"
+      test -L "$SCOPED_HOME/.codex/skills/workflow-orchestrator"
+      test ! -e "$SCOPED_HOME/.claude"
+      test ! -e "$SCOPED_HOME/.copilot"
+      test ! -e "$SCOPED_HOME/.config/opencode"
+      ;;
+    claude)
+      test -L "$SCOPED_HOME/.claude/skills/workflow-orchestrator"
+      test ! -e "$SCOPED_HOME/.codex"
+      test ! -e "$SCOPED_HOME/.copilot"
+      test ! -e "$SCOPED_HOME/.config/opencode"
+      ;;
+    copilot)
+      test -L "$SCOPED_HOME/.copilot/agents/workflow-orchestrator.agent.md"
+      test -L "$SCOPED_HOME/.copilot/skills/workflow-orchestrator"
+      test ! -e "$SCOPED_HOME/.codex"
+      test ! -e "$SCOPED_HOME/.claude"
+      test ! -e "$SCOPED_HOME/.config/opencode"
+      ;;
+    opencode)
+      test -L "$SCOPED_HOME/.config/opencode/agents/workflow-orchestrator.md"
+      test ! -e "$SCOPED_HOME/.codex"
+      test ! -e "$SCOPED_HOME/.claude"
+      test ! -e "$SCOPED_HOME/.copilot"
+      ;;
+  esac
+
+  make -s -C "$ROOT" "uninstall-$tool" HOME="$SCOPED_HOME"
+  test -e "$SCOPED_HOME/.config/agent-workflow/AGENTS.md"
+
+  case "$tool" in
+    codex)
+      test ! -e "$SCOPED_HOME/.codex/AGENTS.md"
+      test ! -e "$SCOPED_HOME/.codex/skills/workflow-orchestrator"
+      ;;
+    claude)
+      test ! -e "$SCOPED_HOME/.claude/skills/workflow-orchestrator"
+      ;;
+    copilot)
+      test ! -e "$SCOPED_HOME/.copilot/agents/workflow-orchestrator.agent.md"
+      test ! -e "$SCOPED_HOME/.copilot/skills/workflow-orchestrator"
+      ;;
+    opencode)
+      test ! -e "$SCOPED_HOME/.config/opencode/agents/workflow-orchestrator.md"
+      ;;
+  esac
+
+  rm -rf "$SCOPED_HOME"
+done
+
 printf 'Lifecycle test passed.\n'
