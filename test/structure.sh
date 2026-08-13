@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILLS=(workflow-orchestrator workflow-planner workflow-implementer workflow-reviewer workflow-tdd)
 PROMPTS=(workflow-orchestrate workflow-plan workflow-implement workflow-review workflow-tdd workflow-resolve workflow-plan-critique workflow-pr-summary workflow-branch-name workflow-commit-message)
 OPENCODE_AGENTS=(workflow-orchestrator workflow-reviewer)
+COPILOT_AGENTS=(workflow-orchestrator explore general workflow-reviewer)
 
 for skill in "${SKILLS[@]}"; do
   path="$ROOT/global/skills/$skill/SKILL.md"
@@ -22,6 +23,25 @@ for prompt in "${PROMPTS[@]}"; do
   test -f "$ROOT/global/prompts/$prompt.md"
   test -f "$ROOT/global/copilot/prompts/$prompt.prompt.md"
 done
+
+for agent in "${COPILOT_AGENTS[@]}"; do
+  path="$ROOT/global/copilot/agents/$agent.agent.md"
+  test -f "$path"
+  cmp -s "$ROOT/copilot/agents/$agent.agent.md" "$path"
+  rg -q "^name: $agent$" "$path"
+  rg -q '^description: .+' "$path"
+  rg -q '^model: .+' "$path"
+  rg -q '^tools: .+' "$path"
+  rg -q '^target: vscode$' "$path"
+done
+
+rg -q "^agents: \['explore', 'general', 'workflow-reviewer'\]$" "$ROOT/global/copilot/agents/workflow-orchestrator.agent.md"
+rg -q "^tools: \['agent', 'read', 'search', 'edit', 'execute', 'web', 'todos', 'vscode/askQuestions'\]$" "$ROOT/global/copilot/agents/workflow-orchestrator.agent.md"
+rg -q '^user-invocable: false$' "$ROOT/global/copilot/agents/explore.agent.md"
+rg -q '^user-invocable: false$' "$ROOT/global/copilot/agents/general.agent.md"
+rg -q '^user-invocable: false$' "$ROOT/global/copilot/agents/workflow-reviewer.agent.md"
+rg -q "^tools: \['read', 'search'\]$" "$ROOT/global/copilot/agents/workflow-reviewer.agent.md"
+rg -q '^agent: workflow-orchestrator$' "$ROOT/global/copilot/prompts/workflow-orchestrate.prompt.md"
 
 for agent in "${OPENCODE_AGENTS[@]}"; do
   path="$ROOT/global/opencode/agents/$agent.md"

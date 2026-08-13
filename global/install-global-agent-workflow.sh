@@ -8,6 +8,7 @@ ALIASES=(agent-planner agent-implementer agent-reviewer)
 ALIAS_SKILLS=(workflow-planner workflow-implementer workflow-reviewer)
 OPENCODE_AGENTS=(workflow-orchestrator workflow-reviewer)
 LEGACY_OPENCODE_AGENTS=(workflow-planner workflow-implementer workflow-tdd)
+COPILOT_AGENTS=(workflow-orchestrator explore general workflow-reviewer)
 
 check_link_target() {
   local path="$1"
@@ -37,6 +38,10 @@ check_link_target "$HOME/.codex/AGENTS.md" "$CONFIG_ROOT/AGENTS.md"
 check_link_target "$HOME/.copilot/copilot-instructions.md" "$CONFIG_ROOT/AGENTS.md"
 check_link_target "$HOME/.copilot/instructions/agent-workflow.instructions.md" "$CONFIG_ROOT/copilot/instructions/agent-workflow.instructions.md"
 
+for agent in "${COPILOT_AGENTS[@]}"; do
+  check_link_target "$HOME/.copilot/agents/$agent.agent.md" "$CONFIG_ROOT/copilot/agents/$agent.agent.md"
+done
+
 for prompt in "$ROOT/copilot/prompts/"*.prompt.md; do
   name="$(basename "$prompt")"
   check_link_target "$HOME/.copilot/prompts/$name" "$CONFIG_ROOT/copilot/prompts/$name"
@@ -57,6 +62,7 @@ done
 mkdir -p "$CONFIG_ROOT/skills"
 mkdir -p "$CONFIG_ROOT/prompts"
 mkdir -p "$CONFIG_ROOT/copilot/instructions"
+mkdir -p "$CONFIG_ROOT/copilot/agents"
 mkdir -p "$CONFIG_ROOT/copilot/prompts"
 mkdir -p "$CONFIG_ROOT/opencode/agents"
 
@@ -90,6 +96,7 @@ mkdir -p "$HOME/.codex/skills"
 mkdir -p "$HOME/.claude/skills"
 mkdir -p "$HOME/.copilot/skills"
 mkdir -p "$HOME/.copilot/instructions"
+mkdir -p "$HOME/.copilot/agents"
 mkdir -p "$HOME/.copilot/prompts"
 mkdir -p "$HOME/.config/opencode/agents"
 
@@ -116,8 +123,12 @@ for index in "${!ALIASES[@]}"; do
 done
 
 cp "$ROOT/copilot/instructions/agent-workflow.instructions.md" "$CONFIG_ROOT/copilot/instructions/agent-workflow.instructions.md"
+cp "$ROOT/copilot/agents/"*.agent.md "$CONFIG_ROOT/copilot/agents/"
 cp "$ROOT/copilot/prompts/"*.prompt.md "$CONFIG_ROOT/copilot/prompts/"
 ln -sfn "$CONFIG_ROOT/copilot/instructions/agent-workflow.instructions.md" "$HOME/.copilot/instructions/agent-workflow.instructions.md"
+for agent in "${COPILOT_AGENTS[@]}"; do
+  ln -sfn "$CONFIG_ROOT/copilot/agents/$agent.agent.md" "$HOME/.copilot/agents/$agent.agent.md"
+done
 for prompt in "$ROOT/copilot/prompts/"*.prompt.md; do
   name="$(basename "$prompt")"
   ln -sfn "$CONFIG_ROOT/copilot/prompts/$name" "$HOME/.copilot/prompts/$name"
@@ -142,9 +153,12 @@ echo "  ~/.copilot/copilot-instructions.md"
 echo "  ~/.copilot/skills/workflow-*"
 echo
 echo "Copilot VS Code:"
+echo "  ~/.copilot/agents/workflow-*.agent.md"
+echo "  ~/.copilot/agents/explore.agent.md"
+echo "  ~/.copilot/agents/general.agent.md"
 echo "  ~/.copilot/prompts/workflow-*.prompt.md"
 echo
 echo "OpenCode:"
 echo "  ~/.config/opencode/agents/workflow-*.md"
 echo
-echo "Use /workflow-orchestrate in Copilot Chat to start orchestration."
+echo "Select workflow-orchestrator or use /workflow-orchestrate in Copilot Chat."

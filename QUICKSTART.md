@@ -55,9 +55,11 @@ flowchart TD
 
 For small tasks, use the orchestrator alone. For medium tasks, add exploration for unfamiliar code and an implementer only for bounded work. For large tasks, parallelize only independent discovery or non-overlapping implementation scopes, then review the assembled final diff.
 
-## Optional Copilot Prompts
+## VS Code Agent Setup
 
-Use `/workflow-orchestrate` to begin orchestration. Other `/workflow-*` prompts remain available for focused specialist work.
+`make install` installs `workflow-orchestrator`, `explore`, `general`, and `workflow-reviewer` under `~/.copilot/agents/`. Reload VS Code, select `workflow-orchestrator` in Chat, and submit the task. `/workflow-orchestrate` starts the same custom agent; other `/workflow-*` prompts remain available for focused specialist work.
+
+The custom agents mirror OpenCode's Sol/Luna/Terra/Claude model routing and tool boundaries. Keep nested subagents disabled (the VS Code default) for one-level delegation. Model availability depends on your Copilot plan and organization policy.
 
 ## Lifecycle
 

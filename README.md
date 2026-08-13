@@ -1,6 +1,6 @@
 # Multi-Agent Orchestration Skills
 
-Model-neutral global skills and optional Copilot prompts for a coding workflow. OpenCode model selection lives in its configuration, not in skills.
+Model-neutral global skills plus native OpenCode and VS Code multi-agent configurations for a coding workflow. Model selection lives in each tool's agent configuration, not in skills.
 
 ## Workflow
 
@@ -42,6 +42,7 @@ global/
     workflow-branch-name.md
     workflow-commit-message.md
   copilot/
+    agents/*.agent.md
     instructions/agent-workflow.instructions.md
     prompts/*.prompt.md
   opencode/
@@ -102,9 +103,17 @@ Agent Markdown files contain role instructions only. Skills contain portable wor
 
 Restart OpenCode after installing agent files or changing its configuration.
 
+## VS Code Agent Configuration
+
+`make install` installs native custom agents under `~/.copilot/agents/`. Select `workflow-orchestrator` in the VS Code Chat agent picker, or run `/workflow-orchestrate`, which is pinned to that agent. The orchestrator can invoke only `explore`, `general`, and `workflow-reviewer`; those agents are hidden from the picker and cannot invoke subagents themselves.
+
+The model routing mirrors OpenCode: GPT-5.6 Sol for orchestration, GPT-5.6 Luna for discovery, GPT-5.6 Terra for implementation, and Claude Sonnet 5 for review. Your Copilot plan and organization must enable those models. VS Code custom agents restrict available tools but use VS Code's session-level approval controls rather than OpenCode's per-command permission rules.
+
+Keep `chat.subagents.allowInvocationsFromSubagents` disabled (the default) to preserve one-level delegation. Reload VS Code after installation, then use **Chat: Open Customizations** or Chat diagnostics to verify that all four agents loaded.
+
 ## Discovery
 
-- Copilot VS Code Chat: type `/workflow-orchestrate`.
+- Copilot VS Code Chat: select `workflow-orchestrator` or type `/workflow-orchestrate`.
 - Codex/Claude: use `workflow-orchestrator` or ask directly.
 - OpenCode: select `workflow-orchestrator`; it uses `explore` for bounded discovery, delegates bounded implementation to `general`, and requests independent review when warranted.
 - Copilot CLI: uses `~/.copilot/copilot-instructions.md` and `~/.copilot/skills/*`.

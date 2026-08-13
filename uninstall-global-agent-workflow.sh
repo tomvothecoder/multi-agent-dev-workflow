@@ -7,6 +7,7 @@ ALIASES=(agent-planner agent-implementer agent-reviewer)
 ALIAS_SKILLS=(workflow-planner workflow-implementer workflow-reviewer)
 OPENCODE_AGENTS=(workflow-orchestrator workflow-reviewer)
 LEGACY_OPENCODE_AGENTS=(workflow-planner workflow-implementer workflow-tdd)
+COPILOT_AGENTS=(workflow-orchestrator explore general workflow-reviewer)
 
 remove_managed_link() {
   local path="$1"
@@ -56,6 +57,10 @@ done
 remove_managed_link "$HOME/.codex/AGENTS.md" "$CONFIG_ROOT/AGENTS.md"
 remove_managed_link "$HOME/.copilot/copilot-instructions.md" "$CONFIG_ROOT/AGENTS.md"
 remove_managed_copilot_artifact "$HOME/.copilot/instructions/agent-workflow.instructions.md" "$CONFIG_ROOT/copilot/instructions/agent-workflow.instructions.md"
+
+for agent in "${COPILOT_AGENTS[@]}"; do
+  remove_managed_link "$HOME/.copilot/agents/$agent.agent.md" "$CONFIG_ROOT/copilot/agents/$agent.agent.md"
+done
 
 for prompt in workflow-branch-name workflow-commit-message workflow-implement workflow-orchestrate workflow-plan-critique workflow-plan workflow-pr-summary workflow-resolve workflow-review workflow-tdd; do
   remove_managed_copilot_artifact "$HOME/.copilot/prompts/$prompt.prompt.md" "$CONFIG_ROOT/copilot/prompts/$prompt.prompt.md"

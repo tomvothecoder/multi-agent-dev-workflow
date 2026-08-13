@@ -1,5 +1,6 @@
 ---
-description: Coordinate planner, implementer, and reviewer subagents for a coding task.
+description: Coordinate bounded discovery, implementation, checks, and independent review for a coding task.
+agent: workflow-orchestrator
 ---
 
 Use the workflow-orchestrator skill.
