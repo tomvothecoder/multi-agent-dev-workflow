@@ -14,6 +14,37 @@ rg -q '^Usage:' "$TEST_HOME/install-error"
 if HOME="$TEST_HOME" "$ROOT/global/uninstall-global-agent-workflow.sh" codex >"$TEST_HOME/uninstall-error" 2>&1; then exit 1; fi
 rg -q '^Usage:' "$TEST_HOME/uninstall-error"
 
+# Core OpenCode configuration is an opt-in, user-owned template copy.
+CORE_CONFIG_HOME="$(mktemp -d)"
+CORE_CONFIG_DIR="$CORE_CONFIG_HOME/custom-opencode"
+CORE_CONFIG="$CORE_CONFIG_DIR/opencode.jsonc"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install-opencode-config
+test -f "$CORE_CONFIG"
+test ! -L "$CORE_CONFIG"
+cmp -s "$ROOT/global/opencode/opencode.jsonc" "$CORE_CONFIG"
+rm -rf "$CORE_CONFIG_HOME"
+
+# Existing user-owned core configuration is not replaced.
+EXISTING_CORE_HOME="$(mktemp -d)"
+EXISTING_CORE_DIR="$EXISTING_CORE_HOME/custom-opencode"
+EXISTING_CORE_CONFIG="$EXISTING_CORE_DIR/opencode.jsonc"
+mkdir -p "$EXISTING_CORE_DIR"
+printf 'user-owned core config\n' > "$EXISTING_CORE_CONFIG"
+if HOME="$EXISTING_CORE_HOME" OPENCODE_CONFIG_DIR="$EXISTING_CORE_DIR" make -C "$ROOT" install-opencode-config >"$EXISTING_CORE_HOME/core-config-error" 2>&1; then exit 1; fi
+rg -q 'Refusing to replace existing user-owned OpenCode configuration:' "$EXISTING_CORE_HOME/core-config-error"
+test "$(<"$EXISTING_CORE_CONFIG")" = 'user-owned core config'
+rm -rf "$EXISTING_CORE_HOME"
+
+# A non-directory configuration path is rejected before any directory creation.
+NON_DIRECTORY_CORE_HOME="$(mktemp -d)"
+NON_DIRECTORY_CORE_DIR="$NON_DIRECTORY_CORE_HOME/custom-opencode"
+printf 'not a directory\n' > "$NON_DIRECTORY_CORE_DIR"
+if HOME="$NON_DIRECTORY_CORE_HOME" OPENCODE_CONFIG_DIR="$NON_DIRECTORY_CORE_DIR" make -C "$ROOT" install-opencode-config >"$NON_DIRECTORY_CORE_HOME/core-config-error" 2>&1; then exit 1; fi
+rg -q 'Refusing to use non-directory OpenCode configuration directory:' "$NON_DIRECTORY_CORE_HOME/core-config-error"
+test "$(<"$NON_DIRECTORY_CORE_DIR")" = 'not a directory'
+test ! -e "$NON_DIRECTORY_CORE_HOME/.config"
+rm -rf "$NON_DIRECTORY_CORE_HOME"
+
 # Legacy Slim configurations are moved to a non-overwriting backup path.
 BACKUP_HOME="$(mktemp -d)"
 BACKUP_CONFIG="$BACKUP_HOME/custom-opencode"

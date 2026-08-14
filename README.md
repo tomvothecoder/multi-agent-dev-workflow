@@ -82,6 +82,14 @@ npx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subage
 make install
 ```
 
+To optionally initialize the separate, user-owned core OpenCode configuration from this repository's template, run:
+
+```bash
+make install-opencode-config
+```
+
+This command only copies the template when `opencode.jsonc` is absent; it never replaces an existing configuration.
+
 If a previous Slim installation created `~/.config/opencode/oh-my-opencode-slim.json`, the installer preserves it rather than overwriting it. Back it up before installing this repository's managed `.jsonc` configuration:
 
 ```bash
