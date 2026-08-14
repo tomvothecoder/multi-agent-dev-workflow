@@ -107,6 +107,12 @@ opencode models --refresh
 
 Open your plugin config at ~/.config/opencode/oh-my-opencode-slim.json and update the models you want for each agent.
 
+### 5. Launch OpenCode and start working!
+
+```bash
+opencode
+```
+
 ## Customized configuration of oh-my-opencode-slim
 
 The following table summarizes the differences from stock Slim.
