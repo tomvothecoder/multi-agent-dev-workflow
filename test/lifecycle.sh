@@ -14,6 +14,38 @@ rg -q '^Usage:' "$TEST_HOME/install-error"
 if HOME="$TEST_HOME" "$ROOT/global/uninstall-global-agent-workflow.sh" codex >"$TEST_HOME/uninstall-error" 2>&1; then exit 1; fi
 rg -q '^Usage:' "$TEST_HOME/uninstall-error"
 
+# Legacy Slim configurations are moved to a non-overwriting backup path.
+BACKUP_HOME="$(mktemp -d)"
+BACKUP_CONFIG="$BACKUP_HOME/custom-opencode"
+BACKUP_SOURCE="$BACKUP_CONFIG/oh-my-opencode-slim.json"
+BACKUP_TARGET="$BACKUP_SOURCE.backup"
+mkdir -p "$BACKUP_CONFIG"
+printf 'legacy Slim config\n' > "$BACKUP_HOME/legacy-config"
+ln -s "$BACKUP_HOME/legacy-config" "$BACKUP_SOURCE"
+HOME="$BACKUP_HOME" OPENCODE_CONFIG_DIR="$BACKUP_CONFIG" make -C "$ROOT" backup
+test ! -e "$BACKUP_SOURCE" && test ! -L "$BACKUP_SOURCE"
+test -L "$BACKUP_TARGET"
+test "$(readlink "$BACKUP_TARGET")" = "$BACKUP_HOME/legacy-config"
+rm -rf "$BACKUP_HOME"
+
+# Backup fails clearly when no legacy Slim configuration exists.
+MISSING_BACKUP_HOME="$(mktemp -d)"
+if HOME="$MISSING_BACKUP_HOME" OPENCODE_CONFIG_DIR="$MISSING_BACKUP_HOME/custom-opencode" make -C "$ROOT" backup >"$MISSING_BACKUP_HOME/backup-error" 2>&1; then exit 1; fi
+rg -q 'Legacy Slim configuration does not exist:' "$MISSING_BACKUP_HOME/backup-error"
+rm -rf "$MISSING_BACKUP_HOME"
+
+# Backup never overwrites an existing backup.
+EXISTING_BACKUP_HOME="$(mktemp -d)"
+EXISTING_BACKUP_CONFIG="$EXISTING_BACKUP_HOME/custom-opencode"
+mkdir -p "$EXISTING_BACKUP_CONFIG"
+printf 'legacy Slim config\n' > "$EXISTING_BACKUP_CONFIG/oh-my-opencode-slim.json"
+printf 'existing backup\n' > "$EXISTING_BACKUP_CONFIG/oh-my-opencode-slim.json.backup"
+if HOME="$EXISTING_BACKUP_HOME" OPENCODE_CONFIG_DIR="$EXISTING_BACKUP_CONFIG" make -C "$ROOT" backup >"$EXISTING_BACKUP_HOME/backup-error" 2>&1; then exit 1; fi
+rg -q 'Refusing to overwrite existing legacy Slim configuration backup:' "$EXISTING_BACKUP_HOME/backup-error"
+test "$(<"$EXISTING_BACKUP_CONFIG/oh-my-opencode-slim.json")" = 'legacy Slim config'
+test "$(<"$EXISTING_BACKUP_CONFIG/oh-my-opencode-slim.json.backup")" = 'existing backup'
+rm -rf "$EXISTING_BACKUP_HOME"
+
 # The configured destination, rather than HOME's default, owns the two links.
 HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/install-global-agent-workflow.sh"
 HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/install-global-agent-workflow.sh"

@@ -57,6 +57,7 @@ refuse_unmanaged_canonical "$CANONICAL_CONFIG" "$SOURCE_CONFIG"
 refuse_unmanaged_canonical "$CANONICAL_APPEND" "$SOURCE_APPEND"
 if [ -e "$DESTINATION_JSON" ] || [ -L "$DESTINATION_JSON" ]; then
   printf 'Refusing to replace unmanaged path: %s\n' "$DESTINATION_JSON" >&2
+  printf 'Back up the legacy configuration, then retry:\n  make backup\n  make install\n' >&2
   exit 1
 fi
 refuse_unmanaged "$DESTINATION_CONFIG" "$CANONICAL_CONFIG"

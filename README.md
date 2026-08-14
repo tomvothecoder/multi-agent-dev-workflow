@@ -82,6 +82,15 @@ Then install this repository's Slim customizations:
 make install
 ```
 
+If a previous Slim installation created `~/.config/opencode/oh-my-opencode-slim.json`, the installer preserves it rather than overwriting it. Back it up before installing this repository's managed `.jsonc` configuration:
+
+```bash
+make backup
+make install
+```
+
+Manually merge any needed local settings from the backup, then restart OpenCode.
+
 ## Customized configuration of oh-my-opencode-slim
 
 The following table summarizes the differences from stock Slim.
