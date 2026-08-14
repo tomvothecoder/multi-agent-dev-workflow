@@ -1,28 +1,31 @@
 # oh-my-opencode-slim Integration
 
-This repository provides an OpenCode configuration template that registers the Slim plugin and preserves this repository's workflow specialization.
+## Install
 
-## Install oh-my-opencode-slim
+Use the official Slim installer:
 
 ```bash
-bunx oh-my-opencode-slim@latest install
-# or
-npx oh-my-opencode-slim@latest install
+bunx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subagents=yes
+# Fallback when Bun is unavailable:
+npx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subagents=yes
 ```
 
-See the [official installation guide](https://github.com/alvinunreal/oh-my-opencode-slim/blob/master/docs/installation.md) for setup details.
+Then run `make install`. It links this repository's Slim configuration and hybrid append into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}` and intentionally never overwrites the user-owned core `opencode.json` or `opencode.jsonc`. Restart OpenCode after installation.
 
-## Template customizations
+See the [official installation guide](https://github.com/alvinunreal/oh-my-opencode-slim/blob/master/docs/installation.md) for Slim setup details.
 
-[`../global/opencode/opencode.jsonc`](../global/opencode/opencode.jsonc) contains these verified choices:
+## Hybrid customizations
 
-| Choice | Template setting |
+| Area | Difference from stock Slim |
 | --- | --- |
-| Slim plugin | Registers `oh-my-opencode-slim` in the `plugin` array. |
-| Single-level workflow | `default_agent: "workflow-orchestrator"` and `subagent_depth: 1`. |
-| Role-specific agents | Custom `workflow-orchestrator`, `explore`, `workflow-reviewer`, and `general` definitions set their models and least-privilege permissions. |
-| Workflow path | Disables built-in `build` and `plan` agents. |
+| Hybrid routing | Sets the `hybrid` preset and configures model, variant, skill, and MCP routing for `orchestrator`, `oracle`, `librarian`, `explorer`, `designer`, `fixer`, and `council`. |
+| Review and fallback workers | Adds the read-only `copilot-reviewer` and the `livai-senior` implementation worker with its configured model fallback. |
+| Architecture council | Defines the `architecture` council seating for Codex, Claude, and senior-engineering perspectives. |
+| Hybrid append policy | Adds hybrid-specific orchestration, parallel-work, testing, review, and council guidance from `hybrid/orchestrator_append.md`. |
+| Safety and verification | Keeps core host configuration user-owned; the append policy requires relevant repository checks and avoids overlapping concurrent edits. |
 
 ## Configuration boundary
 
-These are native OpenCode `agent` overrides alongside Slim plugin registration, not Slim `oh-my-opencode-slim.jsonc` custom-agent or prompt-override files. See the [official Slim configuration documentation](https://github.com/alvinunreal/oh-my-opencode-slim/blob/master/docs/configuration.md).
+`global/opencode/opencode.jsonc` remains the separate core OpenCode host template. `global/opencode/oh-my-opencode-slim.jsonc` is the Slim plugin configuration, including the hybrid preset. The hybrid orchestrator append lives at `global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md`.
+
+The core configuration remains user-owned. `make install` links only the Slim configuration and append, never the core `opencode.json` or `opencode.jsonc`. See the [official Slim configuration documentation](https://github.com/alvinunreal/oh-my-opencode-slim/blob/master/docs/configuration.md) for plugin configuration details.

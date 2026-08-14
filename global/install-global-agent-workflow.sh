@@ -3,18 +3,22 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_ROOT="$HOME/.config/agent-workflow"
-OPENCODE_AGENTS=(workflow-orchestrator workflow-reviewer)
-LEGACY_OPENCODE_AGENTS=(workflow-planner workflow-implementer workflow-tdd)
+OPENCODE_CONFIG_DIR="${OPENCODE_CONFIG_DIR:-$HOME/.config/opencode}"
+SOURCE_CONFIG="$ROOT/opencode/oh-my-opencode-slim.jsonc"
+SOURCE_APPEND="$ROOT/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
+CANONICAL_CONFIG="$CONFIG_ROOT/opencode/oh-my-opencode-slim.jsonc"
+CANONICAL_APPEND="$CONFIG_ROOT/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
+DESTINATION_CONFIG="$OPENCODE_CONFIG_DIR/oh-my-opencode-slim.jsonc"
+DESTINATION_JSON="$OPENCODE_CONFIG_DIR/oh-my-opencode-slim.json"
+DESTINATION_APPEND="$OPENCODE_CONFIG_DIR/oh-my-opencode-slim/hybrid/orchestrator_append.md"
 
 if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != opencode ]; }; then
   printf 'Usage: %s [opencode]\n' "${0##*/}" >&2
   exit 2
 fi
 
-check_link_target() {
-  local path="$1"
-  local target="$2"
-
+refuse_unmanaged() {
+  local path="$1" target="$2"
   if [ -e "$path" ] || [ -L "$path" ]; then
     if [ ! -L "$path" ] || [ "$(readlink "$path")" != "$target" ]; then
       printf 'Refusing to replace unmanaged path: %s\n' "$path" >&2
@@ -23,39 +27,45 @@ check_link_target() {
   fi
 }
 
-for agent in "${OPENCODE_AGENTS[@]}"; do
-  check_link_target "$HOME/.config/opencode/agents/$agent.md" "$CONFIG_ROOT/opencode/agents/$agent.md"
-done
-
-for agent in "${LEGACY_OPENCODE_AGENTS[@]}"; do
-  path="$HOME/.config/opencode/agents/$agent.md"
-  target="$CONFIG_ROOT/opencode/agents/$agent.md"
-  if [ -L "$path" ] && [ "$(readlink "$path")" = "$target" ]; then
-    rm "$path"
+refuse_non_directory() {
+  local path="$1"
+  if { [ -e "$path" ] || [ -L "$path" ]; } && [ ! -d "$path" ]; then
+    printf 'Refusing to use non-directory path: %s\n' "$path" >&2
+    return 1
   fi
-done
+}
 
-mkdir -p "$CONFIG_ROOT/skills" "$CONFIG_ROOT/opencode/agents"
-cp "$ROOT/AGENTS.md" "$CONFIG_ROOT/AGENTS.md"
+refuse_unmanaged_canonical() {
+  local path="$1" source="$2"
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    if [ ! -f "$path" ] || [ -L "$path" ] || ! cmp -s "$source" "$path"; then
+      printf 'Refusing to replace unmanaged canonical artifact: %s\n' "$path" >&2
+      return 1
+    fi
+  fi
+}
 
-for skill in workflow-orchestrator workflow-reviewer; do
-  src="$ROOT/skills/$skill"
-  test -f "$src/SKILL.md" || { printf 'Missing package skill: %s/SKILL.md\n' "$src" >&2; exit 1; }
-  rm -rf "$CONFIG_ROOT/skills/$skill"
-  cp -R "$src" "$CONFIG_ROOT/skills/$skill"
-done
+# Complete every conflict check before creating directories, copying, or linking.
+refuse_non_directory "$CONFIG_ROOT"
+refuse_non_directory "$CONFIG_ROOT/opencode"
+refuse_non_directory "$CONFIG_ROOT/opencode/oh-my-opencode-slim"
+refuse_non_directory "$CONFIG_ROOT/opencode/oh-my-opencode-slim/hybrid"
+refuse_non_directory "$OPENCODE_CONFIG_DIR"
+refuse_non_directory "$OPENCODE_CONFIG_DIR/oh-my-opencode-slim"
+refuse_non_directory "$OPENCODE_CONFIG_DIR/oh-my-opencode-slim/hybrid"
+refuse_unmanaged_canonical "$CANONICAL_CONFIG" "$SOURCE_CONFIG"
+refuse_unmanaged_canonical "$CANONICAL_APPEND" "$SOURCE_APPEND"
+if [ -e "$DESTINATION_JSON" ] || [ -L "$DESTINATION_JSON" ]; then
+  printf 'Refusing to replace unmanaged path: %s\n' "$DESTINATION_JSON" >&2
+  exit 1
+fi
+refuse_unmanaged "$DESTINATION_CONFIG" "$CANONICAL_CONFIG"
+refuse_unmanaged "$DESTINATION_APPEND" "$CANONICAL_APPEND"
 
-for agent in "${OPENCODE_AGENTS[@]}"; do
-  src="$ROOT/opencode/agents/$agent.md"
-  test -f "$src" || { printf 'Missing OpenCode agent: %s\n' "$src" >&2; exit 1; }
-  cp "$src" "$CONFIG_ROOT/opencode/agents/$agent.md"
-done
-rm -f "$CONFIG_ROOT/opencode/agents/workflow-planner.md" "$CONFIG_ROOT/opencode/agents/workflow-implementer.md" "$CONFIG_ROOT/opencode/agents/workflow-tdd.md"
+mkdir -p "$(dirname "$CANONICAL_CONFIG")" "$(dirname "$CANONICAL_APPEND")" "$(dirname "$DESTINATION_CONFIG")" "$(dirname "$DESTINATION_APPEND")"
+[ -e "$CANONICAL_CONFIG" ] || cp "$SOURCE_CONFIG" "$CANONICAL_CONFIG"
+[ -e "$CANONICAL_APPEND" ] || cp "$SOURCE_APPEND" "$CANONICAL_APPEND"
+ln -sfn "$CANONICAL_CONFIG" "$DESTINATION_CONFIG"
+ln -sfn "$CANONICAL_APPEND" "$DESTINATION_APPEND"
 
-mkdir -p "$HOME/.config/opencode/agents"
-for agent in "${OPENCODE_AGENTS[@]}"; do
-  ln -sfn "$CONFIG_ROOT/opencode/agents/$agent.md" "$HOME/.config/opencode/agents/$agent.md"
-done
-
-printf 'Installed orchestrated multi-agent workflow artifacts for OpenCode.\n\n'
-printf '%s\n' 'Canonical:' '  ~/.config/agent-workflow/AGENTS.md' '  ~/.config/agent-workflow/skills/workflow-{orchestrator,reviewer}' '' 'OpenCode:' '  ~/.config/opencode/agents/workflow-*.md'
+printf 'Installed package-managed oh-my-opencode-slim workflow links.\n'

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://unpkg.com/oh-my-opencode-slim@latest/oh-my-opencode-slim.schema.json",
+  "setDefaultAgent": true,
+  "autoUpdate": false,
+  "preset": "hybrid",
+  "presets": {
+    "hybrid": {
+      "orchestrator": { "model": "openai/gpt-5.6-terra", "variant": "high", "skills": ["*"], "mcps": ["*", "!context7"] },
+      "oracle": { "model": "openai/gpt-5.6-sol", "variant": "high", "skills": ["simplify"], "mcps": [] },
+      "librarian": { "model": "openai/gpt-5.6-luna", "variant": "low", "skills": [], "mcps": ["context7", "gh_grep"] },
+      "explorer": { "model": "openai/gpt-5.6-luna", "variant": "low", "skills": [], "mcps": [] },
+      "designer": { "model": "openai/gpt-5.6-terra", "variant": "medium", "skills": [], "mcps": [] },
+      "fixer": { "model": "openai/gpt-5.6-terra", "variant": "medium", "skills": [], "mcps": [] },
+      "council": { "model": "openai/gpt-5.6-terra", "variant": "high", "skills": [], "mcps": [] }
+    }
+  },
+  "agents": {
+    "copilot-reviewer": {
+      "model": "github-copilot/claude-sonnet-5",
+      "permission": { "read": "allow", "glob": "allow", "grep": "allow", "list": "allow", "edit": "deny", "bash": { "*": "deny", "git status*": "allow", "git diff*": "allow", "git show*": "allow" }, "task": "deny", "external_directory": "deny", "webfetch": "deny", "websearch": "deny" },
+      "skills": [], "mcps": [],
+      "prompt": "Independently review the completed implementation. Check correctness, regressions, edge cases, security, concurrency and async behavior, error handling, unnecessary complexity, API compatibility, and missing tests. Do not modify code. Report only concrete actionable findings.",
+      "orchestratorPrompt": "@copilot-reviewer\nRole: independent final reviewer using a different model family. Delegate after non-trivial features, bug fixes, refactors, database changes, async/concurrency work, security-sensitive changes, important pre-merge reviews, or when the user requests independent review. Skip trivial edits, formatting, renames, and mechanical changes."
+    },
+    "livai-senior": {
+      "model": [{ "id": "livai/gpt-5.5", "variant": "high" }, { "id": "openai/gpt-5.6-terra", "variant": "medium" }],
+      "permission": { "read": "allow", "glob": "allow", "grep": "allow", "list": "allow", "edit": "allow", "bash": "allow", "task": "deny", "external_directory": "deny" },
+      "skills": [], "mcps": [],
+      "prompt": "You are a senior implementation worker. Handle a clearly bounded implementation workstream independently. Follow existing repository conventions, implement the requested behavior, add or update appropriate tests, run relevant verification, and return a concise summary of changes, tests, and unresolved issues. Do not spawn additional agents.",
+      "orchestratorPrompt": "@livai-senior\nRole: strong parallel implementation worker with automatic provider fallback. Delegate substantial well-bounded workstreams when parallelism is useful, when an independent implementation perspective adds value, or when additional implementation capacity is useful. Do not ask the user whether LivAI or VPN is available; provider availability is handled by the configured model chain. Never make successful completion of the overall workflow depend on this worker. Do not use for trivial edits or exploration."
+    }
+  },
+  "council": {
+    "default_preset": "architecture",
+    "presets": {
+      "architecture": {
+        "codex": { "model": "openai/gpt-5.6-sol", "variant": "high", "prompt": "Focus on correctness, architecture, implementation feasibility, and difficult technical tradeoffs." },
+        "claude": { "model": "github-copilot/claude-sonnet-5", "prompt": "Act as an independent critic. Focus on failure modes, maintainability, edge cases, and assumptions the other reviewers may miss." },
+        "senior": { "model": [{ "id": "livai/gpt-5.5", "variant": "high" }, { "id": "openai/gpt-5.6-terra", "variant": "high" }], "prompt": "Provide an independent senior-engineering perspective. Challenge the proposed design, identify alternative approaches, and look for assumptions missed by the other councillors." }
+      }
+    }
+  }
+}

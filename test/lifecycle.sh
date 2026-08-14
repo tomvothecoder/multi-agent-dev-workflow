@@ -4,69 +4,53 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_HOME="$(mktemp -d)"
 trap 'rm -rf "$TEST_HOME"' EXIT
-
-mkdir -p "$TEST_HOME/.codex" "$TEST_HOME/.claude" "$TEST_HOME/.copilot" "$TEST_HOME/.config/opencode/agents"
-touch "$TEST_HOME/.codex/unrelated" "$TEST_HOME/.claude/unrelated" "$TEST_HOME/.copilot/unrelated" "$TEST_HOME/.config/opencode/agents/unrelated.md"
+CONFIG_DIR="$TEST_HOME/custom-opencode"
+CANONICAL_ROOT="$TEST_HOME/.config/agent-workflow"
+CONFIG_LINK="$CONFIG_DIR/oh-my-opencode-slim.jsonc"
+APPEND_LINK="$CONFIG_DIR/oh-my-opencode-slim/hybrid/orchestrator_append.md"
 
 if HOME="$TEST_HOME" "$ROOT/global/install-global-agent-workflow.sh" codex >"$TEST_HOME/install-error" 2>&1; then exit 1; fi
 rg -q '^Usage:' "$TEST_HOME/install-error"
 if HOME="$TEST_HOME" "$ROOT/global/uninstall-global-agent-workflow.sh" codex >"$TEST_HOME/uninstall-error" 2>&1; then exit 1; fi
 rg -q '^Usage:' "$TEST_HOME/uninstall-error"
 
-HOME="$TEST_HOME" "$ROOT/global/install-global-agent-workflow.sh"
-HOME="$TEST_HOME" "$ROOT/global/install-global-agent-workflow.sh"
+# The configured destination, rather than HOME's default, owns the two links.
+HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/install-global-agent-workflow.sh"
+HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/install-global-agent-workflow.sh"
+test -L "$CONFIG_LINK"
+test -L "$APPEND_LINK"
+test "$(readlink "$CONFIG_LINK")" = "$CANONICAL_ROOT/opencode/oh-my-opencode-slim.jsonc"
+test "$(readlink "$APPEND_LINK")" = "$CANONICAL_ROOT/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
+test -f "$CANONICAL_ROOT/opencode/oh-my-opencode-slim.jsonc"
+test -f "$CANONICAL_ROOT/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
+test ! -e "$CONFIG_DIR/opencode.jsonc"
+test ! -e "$CONFIG_DIR/opencode.json"
 
-printf '%s\n' '// Preserve user settings while updating agents.' '{"theme":"user-theme","agent":{"unrelated":{"model":"user/model"}}}' > "$TEST_HOME/.config/opencode/opencode.jsonc"
-make -s -C "$ROOT" update-opencode-agents HOME="$TEST_HOME"
-awk -f "$ROOT/global/opencode/strip-jsonc.awk" "$ROOT/global/opencode/opencode.jsonc" > "$TEST_HOME/source.json"
-jq --exit-status --slurpfile source "$TEST_HOME/source.json" '
-  .theme == "user-theme" and
-  .agent == $source[0].agent and
-  has("default_agent") == false
-' "$TEST_HOME/.config/opencode/opencode.jsonc" >/dev/null
+# Every destination conflict is rejected before installation mutates canonical storage.
+for conflict in "$CONFIG_DIR/oh-my-opencode-slim.json" "$CONFIG_DIR/oh-my-opencode-slim.jsonc" "$CONFIG_DIR/oh-my-opencode-slim/hybrid/orchestrator_append.md"; do
+  CONFLICT_HOME="$(mktemp -d)"
+  CONFLICT_CONFIG="$CONFLICT_HOME/opencode"
+  relative="${conflict#"$CONFIG_DIR"}"
+  mkdir -p "$(dirname "$CONFLICT_CONFIG$relative")"
+  printf 'user managed\n' > "$CONFLICT_CONFIG$relative"
+  if HOME="$CONFLICT_HOME" OPENCODE_CONFIG_DIR="$CONFLICT_CONFIG" "$ROOT/global/install-global-agent-workflow.sh" >"$CONFLICT_HOME/error" 2>&1; then exit 1; fi
+  rg -q 'Refusing to replace unmanaged path' "$CONFLICT_HOME/error"
+  test ! -e "$CONFLICT_HOME/.config/agent-workflow"
+  rm -rf "$CONFLICT_HOME"
+done
 
-test -f "$TEST_HOME/.config/agent-workflow/AGENTS.md"
-test -L "$TEST_HOME/.config/opencode/agents/workflow-orchestrator.md"
-test -L "$TEST_HOME/.config/opencode/agents/workflow-reviewer.md"
-test "$(readlink "$TEST_HOME/.config/opencode/agents/workflow-orchestrator.md")" = "$TEST_HOME/.config/agent-workflow/opencode/agents/workflow-orchestrator.md"
-test -e "$TEST_HOME/.codex/unrelated"
-test -e "$TEST_HOME/.claude/unrelated"
-test -e "$TEST_HOME/.copilot/unrelated"
-test -e "$TEST_HOME/.config/opencode/agents/unrelated.md"
-test ! -e "$TEST_HOME/.codex/skills"
-test ! -e "$TEST_HOME/.claude/skills"
-test ! -e "$TEST_HOME/.copilot/skills"
+# Uninstall removes only links and canonical artifacts it owns.
+HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/uninstall-global-agent-workflow.sh"
+HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/uninstall-global-agent-workflow.sh"
+test ! -e "$CONFIG_LINK"
+test ! -e "$APPEND_LINK"
+test ! -e "$CANONICAL_ROOT"
 
-HOME="$TEST_HOME" "$ROOT/global/uninstall-global-agent-workflow.sh"
-HOME="$TEST_HOME" "$ROOT/global/uninstall-global-agent-workflow.sh"
-test ! -e "$TEST_HOME/.config/agent-workflow/AGENTS.md"
-test ! -e "$TEST_HOME/.config/opencode/agents/workflow-orchestrator.md"
-test ! -e "$TEST_HOME/.config/opencode/agents/workflow-reviewer.md"
-test -e "$TEST_HOME/.config/opencode/agents/unrelated.md"
-test -e "$TEST_HOME/.codex/unrelated"
-test -e "$TEST_HOME/.claude/unrelated"
-test -e "$TEST_HOME/.copilot/unrelated"
-
-ALIAS_HOME="$(mktemp -d)"
-make -s -C "$ROOT" install-opencode HOME="$ALIAS_HOME"
-test -L "$ALIAS_HOME/.config/opencode/agents/workflow-orchestrator.md"
-make -s -C "$ROOT" uninstall-opencode HOME="$ALIAS_HOME"
-test ! -e "$ALIAS_HOME/.config/opencode/agents/workflow-orchestrator.md"
-rm -rf "$ALIAS_HOME"
-
-NERSC_HOME="$(mktemp -d)"
-mkdir -p "$NERSC_HOME/.codex" "$NERSC_HOME/.claude" "$NERSC_HOME/.copilot" "$NERSC_HOME/.config/opencode"
-touch "$NERSC_HOME/.codex/unrelated" "$NERSC_HOME/.claude/unrelated" "$NERSC_HOME/.copilot/unrelated"
-printf 'OpenCode custom instructions\n' > "$NERSC_HOME/.config/opencode/AGENTS.md"
-make -s -C "$ROOT" install-nersc-rules HOME="$NERSC_HOME"
-make -s -C "$ROOT" install-nersc-rules HOME="$NERSC_HOME"
-test "$(rg -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$NERSC_HOME/.config/opencode/AGENTS.md")" = 1
-test -e "$NERSC_HOME/.codex/unrelated"
-test -e "$NERSC_HOME/.claude/unrelated"
-test -e "$NERSC_HOME/.copilot/unrelated"
-make -s -C "$ROOT" uninstall-nersc-rules HOME="$NERSC_HOME"
-! rg -Fq '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$NERSC_HOME/.config/opencode/AGENTS.md"
-rg -q '^OpenCode custom instructions$' "$NERSC_HOME/.config/opencode/AGENTS.md"
-rm -rf "$NERSC_HOME"
+UNMANAGED_HOME="$(mktemp -d)"
+mkdir -p "$UNMANAGED_HOME/.config/opencode"
+printf 'user Slim config\n' > "$UNMANAGED_HOME/.config/opencode/oh-my-opencode-slim.jsonc"
+HOME="$UNMANAGED_HOME" "$ROOT/global/uninstall-global-agent-workflow.sh" >"$UNMANAGED_HOME/uninstall-output" 2>&1
+test -f "$UNMANAGED_HOME/.config/opencode/oh-my-opencode-slim.jsonc"
+rm -rf "$UNMANAGED_HOME"
 
 printf 'Lifecycle test passed.\n'

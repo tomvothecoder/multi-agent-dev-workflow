@@ -1,15 +1,13 @@
-# Global Agent Workflow
+# Hybrid Workflow Preferences
 
-These are global defaults for an orchestrated multi-agent coding workflow.
-
-Repo-level `AGENTS.md` and repo-local skills override these global defaults.
+These are global defaults for the oh-my-opencode-slim hybrid workflow. Repository-level `AGENTS.md` and repository-local skills or instructions override them.
 
 ## Precedence
 
 1. User task/spec
-2. Repo `AGENTS.md`
-3. Repo-local skills/instructions
-4. This global `AGENTS.md`
+2. Repository `AGENTS.md`
+3. Repository-local skills/instructions
+4. This file
 5. Tool defaults
 
 ## General Rules
@@ -24,29 +22,13 @@ Repo-level `AGENTS.md` and repo-local skills override these global defaults.
 - Do not expose secrets, credentials, tokens, private keys, or unapproved proprietary data.
 - Do not commit, push, open PRs, or merge unless explicitly asked.
 
-## Roles
+## Hybrid Workflow Preferences
 
-Use these role names:
+- Use `orchestrator` as the primary coordinator. The standard flow is: `orchestrator -> explorer (repository discovery) -> fixer/designer or livai-senior (bounded non-overlapping work) -> relevant checks -> copilot-reviewer (when warranted) -> fixer (accepted findings) -> relevant checks -> human approval`.
+- Use `librarian` for external research. Reserve `oracle` and `council` for high-judgment or high-risk architecture, debugging, correctness, concurrency, security, or tradeoff decisions.
+- Delegate only a bounded implementation scope to `fixer`, `designer`, or `livai-senior`, including relevant tests. Do not assign concurrent workers overlapping file ownership.
+- Use `copilot-reviewer` as the independent review worker. It reviews the task, accepted plan, implementation summary, full diff, and test output without modifying code.
+- Use `livai-senior` opportunistically as a bounded implementation worker with its configured provider fallback; never make successful completion depend on it.
+- Resolve accepted findings only. Retain ambiguous, architectural, shared-core, security-sensitive, or cross-cutting work in `orchestrator` unless a bounded scope is explicit.
 
-- `workflow-orchestrator`: plans in context, delegates bounded work when useful, coordinates evidence, and reports decisions needing human approval.
-- `workflow-reviewer`: reviews task, plan, diff, and test output without modifying code.
-
-## Delegation Rule
-
-The orchestrator plans in the active context. Delegate only bounded work with relevant constraints and expected output. Retain ambiguous, architectural, shared-core, or cross-cutting changes. Do not assign overlapping file ownership to concurrent `general` agents.
-
-Parallelize only independent repository discovery or implementation scopes. The delegated `general` agent owns relevant tests.
-
-Reviewers require:
-
-- Task/spec
-- Accepted plan
-- Implementation summary
-- Full diff
-- Test output
-
-Resolvers require:
-
-- Task/spec
-- Accepted plan
-- Accepted findings.
+Parallelize only independent discovery or non-overlapping implementation scopes. Use repository checks and human approval as evidence; agent agreement alone is not evidence.

@@ -1,23 +1,27 @@
 # Usage
 
-Ask the primary agent to use `workflow-orchestrator`:
+Use `orchestrator` as the primary agent:
 
 ```text
-Use workflow-orchestrator.
+Use orchestrator.
 
 Task:
 <task>
 ```
 
-The orchestrator assigns bounded subagent scopes. Concurrent implementers must not own the same files. Reviewers receive task, plan, implementation summary, full diff, and test output.
+Use this workflow:
 
-## OpenCode entry point
+```text
+orchestrator -> explorer (repository discovery) -> fixer/designer or livai-senior (bounded non-overlapping work) -> relevant checks -> copilot-reviewer (when warranted) -> fixer (accepted findings) -> relevant checks -> human approval
+```
 
-- OpenCode: Select `workflow-orchestrator`; it uses `explore` for bounded discovery, delegates bounded implementation to `general`, and requests independent review when warranted.
+Use `librarian` for external research. Reserve `oracle` and `council` for high-judgment or high-risk decisions. `livai-senior` is a bounded implementation worker with a configured provider fallback.
+
+Do not assign concurrent workers overlapping file ownership. Send completed work to `copilot-reviewer` for independent review when warranted; reviewers receive the task, accepted plan, implementation summary, full diff, and test output. Only accepted findings should be resolved.
 
 ## Handoff format
 
-All role outputs use fixed headings, no preamble, bounded bullets, and `None.` for empty sections. This keeps handoffs readable and lets downstream agents consume them consistently.
+Keep handoffs concise and include the changed files, checks, risks, and review focus. Use `None.` for an empty section.
 
 ```text
 Changed:

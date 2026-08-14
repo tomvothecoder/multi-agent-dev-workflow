@@ -1,85 +1,60 @@
-# Quickstart: Orchestrated Multi-Agent Workflow
+# Quickstart: Slim Hybrid Workflow
 
 ## Install
 
+Install oh-my-opencode-slim with its official non-interactive command:
+
 ```bash
-make install
-# Equivalent explicit OpenCode alias:
-make install-opencode
-# Equivalent uninstall alias:
-make uninstall-opencode
-# Optional, for NERSC environments:
-make install-nersc-rules
+bunx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subagents=yes
+# Fallback when Bun is unavailable:
+npx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subagents=yes
 ```
 
-The supported lifecycle scripts are `global/install-global-agent-workflow.sh` and
-`global/uninstall-global-agent-workflow.sh`; the Make targets are their preferred interface.
-The optional NERSC profile lives under `profiles/nersc/` and preserves existing instructions.
+Then install this repository's Slim customizations:
+
+```bash
+make install
+```
+
+`make install` links only the Slim configuration and hybrid append into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It intentionally never overwrites the user-owned core `opencode.json` or `opencode.jsonc`. Restart OpenCode after either installation or configuration changes.
 
 ## Start
 
-Use one primary agent as orchestrator:
-
 ```text
-Use workflow-orchestrator.
+Use orchestrator.
 
 Task:
 <paste task>
 ```
 
-It must inspect repository instructions, classify risk, and delegate bounded work.
-
-Every specialist returns fixed headings with no preamble. Keep bullets bounded; use `None.` for empty sections.
-
-## Default Flow
+## Default flow
 
 ```mermaid
 flowchart TD
-    A[Task] --> B[workflow-orchestrator]
-    B --> C[Plan in context]
-    C --> D{Bounded independent scope?}
-    D -->|Yes| E[general and tests]
-    D -->|No| F[Orchestrator implements]
-    E --> G[Relevant checks]
-    F --> G
-    G --> H[workflow-reviewer]
-    H --> I{Accepted blocker or major findings?}
-    I -->|Yes| J[general resolves accepted findings]
-    J --> G
-    I -->|No| K[Human approval]
+    A[orchestrator] --> B[explorer: repository discovery]
+    B --> C[fixer/designer or livai-senior: bounded non-overlapping work]
+    C --> D[relevant checks]
+    D --> E[copilot-reviewer: when warranted]
+    E --> F[fixer: accepted findings]
+    F --> G[relevant checks]
+    G --> H[human approval]
 ```
 
-## Delegation Rules
+## Hybrid Workflow Preferences
 
-- Orchestrator: plans in context and retains ambiguous, architectural, shared-core, or cross-cutting work.
-- General: owns an explicit delegated file/scope boundary, relevant tests, and minimal changes.
-- Concurrent implementers: never assign overlapping file ownership.
-- Reviewer: independent; receives task, accepted plan, implementation summary, full diff, and test output.
-- Resolver: fixes accepted blocker/major findings only.
-- Orchestrator: runs relevant checks, reports blockers, and asks for human approval for unclear or irreversible decisions.
+- `orchestrator` coordinates the flow and decisions that require human approval.
+- Use `explorer` for repository discovery and `librarian` for external research.
+- Delegate bounded, non-overlapping implementation work to `fixer`, `designer`, or `livai-senior`; `livai-senior` has a configured provider fallback.
+- Use `copilot-reviewer` when independent review is warranted, and resolve accepted findings with `fixer`.
+- Reserve `oracle` and `council` for high-judgment or high-risk decisions.
 
-## OpenCode
+Reviewers receive the task, accepted plan, implementation summary, full diff, and test output. Agent agreement is not a substitute for checks or human approval.
 
-`make install` or `make install-opencode` installs `workflow-orchestrator` and `workflow-reviewer` under `~/.config/opencode/agents/`; built-in `general` handles bounded implementation. Run `make update-opencode-agents` to replace only the user configuration's `agent` section from `global/opencode/opencode.jsonc`. Set `default_agent: "workflow-orchestrator"` and `subagent_depth: 1` separately if needed. Select the orchestrator in OpenCode. It uses built-in `explore` for discovery and handles complex work directly. Restart OpenCode after installation or configuration changes.
+## Configuration
 
-For small tasks, use the orchestrator alone. For medium tasks, add exploration for unfamiliar code and delegate bounded work to `general`. For large tasks, parallelize only independent discovery or non-overlapping implementation scopes, then review the assembled final diff.
+The core OpenCode configuration is user-owned. This repository keeps its separate core host template in `global/opencode/opencode.jsonc`, its Slim plugin configuration in `global/opencode/oh-my-opencode-slim.jsonc`, and preset-specific orchestrator instructions in `global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md`.
 
-### oh-my-opencode-slim
-
-Install the plugin with:
-
-```bash
-bunx oh-my-opencode-slim@latest install
-```
-
-See the [oh-my-opencode-slim integration](docs/oh-my-opencode-slim.md) for installation, template customizations, and configuration boundaries.
-
-## Further reading
-
-- [Usage](docs/usage.md)
-- [NERSC filesystem rules](docs/nersc.md)
-- [OpenCode configuration](docs/opencode.md)
-- [oh-my-opencode-slim integration](docs/oh-my-opencode-slim.md)
+See [OpenCode configuration](docs/opencode.md) and [oh-my-opencode-slim integration](docs/oh-my-opencode-slim.md).
 
 ## Lifecycle
 
@@ -88,5 +63,3 @@ make test
 make structure-test
 make uninstall
 ```
-
-`make test` runs lifecycle and structure checks. `make uninstall` removes package-managed workflow files and preserves unrelated tool configuration.
