@@ -35,11 +35,10 @@ for agent in "${LEGACY_OPENCODE_AGENTS[@]}"; do
   fi
 done
 
-mkdir -p "$CONFIG_ROOT/skills" "$CONFIG_ROOT/prompts" "$CONFIG_ROOT/opencode/agents"
+mkdir -p "$CONFIG_ROOT/skills" "$CONFIG_ROOT/opencode/agents"
 cp "$ROOT/AGENTS.md" "$CONFIG_ROOT/AGENTS.md"
-cp "$ROOT/prompts/"*.md "$CONFIG_ROOT/prompts/" 2>/dev/null || true
 
-for skill in workflow-orchestrator workflow-planner workflow-implementer workflow-reviewer workflow-tdd; do
+for skill in workflow-orchestrator workflow-reviewer; do
   src="$ROOT/skills/$skill"
   test -f "$src/SKILL.md" || { printf 'Missing package skill: %s/SKILL.md\n' "$src" >&2; exit 1; }
   rm -rf "$CONFIG_ROOT/skills/$skill"
@@ -59,4 +58,4 @@ for agent in "${OPENCODE_AGENTS[@]}"; do
 done
 
 printf 'Installed orchestrated multi-agent workflow artifacts for OpenCode.\n\n'
-printf '%s\n' 'Canonical:' '  ~/.config/agent-workflow/AGENTS.md' '  ~/.config/agent-workflow/skills/workflow-*' '  ~/.config/agent-workflow/prompts/workflow-*' '' 'OpenCode:' '  ~/.config/opencode/agents/workflow-*.md'
+printf '%s\n' 'Canonical:' '  ~/.config/agent-workflow/AGENTS.md' '  ~/.config/agent-workflow/skills/workflow-{orchestrator,reviewer}' '' 'OpenCode:' '  ~/.config/opencode/agents/workflow-*.md'

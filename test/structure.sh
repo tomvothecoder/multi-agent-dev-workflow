@@ -2,8 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SKILLS=(workflow-orchestrator workflow-planner workflow-implementer workflow-reviewer workflow-tdd)
-PROMPTS=(workflow-orchestrate workflow-plan workflow-implement workflow-review workflow-tdd workflow-resolve workflow-plan-critique workflow-pr-summary workflow-branch-name workflow-commit-message)
+SKILLS=(workflow-orchestrator workflow-reviewer)
 OPENCODE_AGENTS=(workflow-orchestrator workflow-reviewer)
 
 test -f "$ROOT/profiles/nersc/nersc-filesystem.md"
@@ -16,7 +15,10 @@ for skill in "${SKILLS[@]}"; do
   rg -q "^name: $skill$" "$path"
   rg -q '^description: .+' "$path"
 done
-for prompt in "${PROMPTS[@]}"; do test -f "$ROOT/global/prompts/$prompt.md"; done
+test ! -e "$ROOT/global/prompts"
+test ! -e "$ROOT/global/skills/workflow-planner"
+test ! -e "$ROOT/global/skills/workflow-implementer"
+test ! -e "$ROOT/global/skills/workflow-tdd"
 for agent in "${OPENCODE_AGENTS[@]}"; do
   path="$ROOT/global/opencode/agents/$agent.md"
   test -f "$path"

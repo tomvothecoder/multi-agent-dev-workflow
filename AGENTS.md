@@ -29,22 +29,19 @@ Repo-level `AGENTS.md` and repo-local skills override these global defaults.
 Use these role names:
 
 - `workflow-orchestrator`: plans in context, delegates bounded work when useful, coordinates evidence, and reports decisions needing human approval.
-- `workflow-planner`: creates an optional independent or plan-only implementation plan without modifying code.
-- `workflow-implementer`: implements bounded work, its relevant tests, and accepted findings.
 - `workflow-reviewer`: reviews task, plan, diff, and test output without modifying code.
-- `workflow-tdd`: optionally implements testable behavior through focused red-green-refactor when explicitly requested.
 
 ## Delegation Rule
 
-The orchestrator plans in the active context. Delegate only bounded work with relevant constraints and expected output. Retain ambiguous, architectural, shared-core, or cross-cutting changes. Do not assign overlapping file ownership to concurrent implementers.
+The orchestrator plans in the active context. Delegate only bounded work with relevant constraints and expected output. Retain ambiguous, architectural, shared-core, or cross-cutting changes. Do not assign overlapping file ownership to concurrent `general` agents.
 
-Parallelize only independent repository discovery or implementation scopes. The implementer owns relevant tests; use `workflow-tdd` only when test-first evidence is explicitly required.
+Parallelize only independent repository discovery or implementation scopes. The delegated `general` agent owns relevant tests.
 
 Reviewers require:
 
 - Task/spec
 - Accepted plan
-- Implementer summary
+- Implementation summary
 - Full diff
 - Test output
 

@@ -21,7 +21,7 @@ Coordinate subagents to complete a task. Follow repo-level `AGENTS.md`; it overr
 - Plan in the active context after inspecting the task and repository instructions.
 - Retain ambiguous, architectural, shared-core, security-sensitive, or cross-cutting implementation work.
 - Delegate only bounded, non-overlapping scopes. Do not assign the same files to concurrent implementers.
-- Use focused discovery for unfamiliar repository areas. Use `general` for bounded implementation and its relevant tests. Use `workflow-planner` only for an explicitly requested plan-only or independent-planning pass, and `workflow-tdd` only when test-first evidence is explicitly required.
+- Use focused discovery for unfamiliar repository areas. Use `general` for bounded implementation and its relevant tests.
 - Give each subagent task, relevant constraints, file/scope ownership, and required output.
 - Parallelize only independent discovery or implementation scopes.
 - Pass the task, intended behavior, implementation summary, full diff, and test output to reviewers after the final implementation and checks.

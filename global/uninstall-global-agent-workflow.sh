@@ -4,6 +4,9 @@ set -euo pipefail
 CONFIG_ROOT="$HOME/.config/agent-workflow"
 OPENCODE_AGENTS=(workflow-orchestrator workflow-reviewer)
 LEGACY_OPENCODE_AGENTS=(workflow-planner workflow-implementer workflow-tdd)
+ACTIVE_SKILLS=(workflow-orchestrator workflow-reviewer)
+LEGACY_SKILLS=(workflow-planner workflow-implementer workflow-tdd)
+LEGACY_PROMPTS=(workflow-branch-name workflow-commit-message workflow-implement workflow-plan-critique workflow-plan workflow-pr-summary workflow-resolve workflow-review workflow-orchestrate workflow-tdd)
 
 if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != opencode ]; }; then
   printf 'Usage: %s [opencode]\n' "${0##*/}" >&2
@@ -25,8 +28,14 @@ for agent in "${OPENCODE_AGENTS[@]}" "${LEGACY_OPENCODE_AGENTS[@]}"; do
   remove_managed_link "$HOME/.config/opencode/agents/$agent.md" "$CONFIG_ROOT/opencode/agents/$agent.md"
 done
 
-rm -rf "$CONFIG_ROOT/skills/workflow-planner" "$CONFIG_ROOT/skills/workflow-implementer" "$CONFIG_ROOT/skills/workflow-reviewer" "$CONFIG_ROOT/skills/workflow-orchestrator" "$CONFIG_ROOT/skills/workflow-tdd" "$CONFIG_ROOT/opencode"
-rm -f "$CONFIG_ROOT/AGENTS.md" "$CONFIG_ROOT/prompts/workflow-branch-name.md" "$CONFIG_ROOT/prompts/workflow-commit-message.md" "$CONFIG_ROOT/prompts/workflow-implement.md" "$CONFIG_ROOT/prompts/workflow-plan-critique.md" "$CONFIG_ROOT/prompts/workflow-plan.md" "$CONFIG_ROOT/prompts/workflow-pr-summary.md" "$CONFIG_ROOT/prompts/workflow-resolve.md" "$CONFIG_ROOT/prompts/workflow-review.md" "$CONFIG_ROOT/prompts/workflow-orchestrate.md" "$CONFIG_ROOT/prompts/workflow-tdd.md"
+for skill in "${ACTIVE_SKILLS[@]}" "${LEGACY_SKILLS[@]}"; do
+  rm -rf "$CONFIG_ROOT/skills/$skill"
+done
+for prompt in "${LEGACY_PROMPTS[@]}"; do
+  rm -f "$CONFIG_ROOT/prompts/$prompt.md"
+done
+rm -rf "$CONFIG_ROOT/opencode"
+rm -f "$CONFIG_ROOT/AGENTS.md"
 rmdir "$CONFIG_ROOT/skills" "$CONFIG_ROOT/prompts" "$CONFIG_ROOT" 2>/dev/null || true
 
 printf 'Removed orchestrated multi-agent workflow artifacts for OpenCode.\n'

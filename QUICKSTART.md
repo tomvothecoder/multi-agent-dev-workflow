@@ -52,8 +52,7 @@ flowchart TD
 ## Delegation Rules
 
 - Orchestrator: plans in context and retains ambiguous, architectural, shared-core, or cross-cutting work.
-- Implementer: owns an explicit file/scope boundary, relevant tests, and minimal changes.
-- TDD: optional for explicit test-first workflows; it is not part of the default OpenCode agent set.
+- General: owns an explicit delegated file/scope boundary, relevant tests, and minimal changes.
 - Concurrent implementers: never assign overlapping file ownership.
 - Reviewer: independent; receives task, accepted plan, implementation summary, full diff, and test output.
 - Resolver: fixes accepted blocker/major findings only.
@@ -63,7 +62,7 @@ flowchart TD
 
 `make install` or `make install-opencode` installs `workflow-orchestrator` and `workflow-reviewer` under `~/.config/opencode/agents/`; built-in `general` handles bounded implementation. Run `make update-opencode-agents` to replace only the user configuration's `agent` section from `global/opencode/opencode.jsonc`. Set `default_agent: "workflow-orchestrator"` and `subagent_depth: 1` separately if needed. Select the orchestrator in OpenCode. It uses built-in `explore` for discovery and handles complex work directly. Restart OpenCode after installation or configuration changes.
 
-For small tasks, use the orchestrator alone. For medium tasks, add exploration for unfamiliar code and an implementer only for bounded work. For large tasks, parallelize only independent discovery or non-overlapping implementation scopes, then review the assembled final diff.
+For small tasks, use the orchestrator alone. For medium tasks, add exploration for unfamiliar code and delegate bounded work to `general`. For large tasks, parallelize only independent discovery or non-overlapping implementation scopes, then review the assembled final diff.
 
 ### oh-my-opencode-slim
 

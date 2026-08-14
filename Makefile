@@ -3,7 +3,7 @@
 .PHONY: help install install-opencode install-nersc-rules uninstall uninstall-opencode uninstall-nersc-rules update-opencode-agents test structure-test
 
 help:
-	@printf '%s\n' 'Targets:' '  install                  Install OpenCode workflow artifacts' '  install-opencode         Alias for install' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall                Remove package-managed OpenCode workflow artifacts' '  uninstall-opencode       Alias for uninstall' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  update-opencode-agents   Replace agents in the global OpenCode config' '  test                     Run lifecycle and structure checks' '  structure-test           Validate skill, prompt, and OpenCode agent structure'
+	@printf '%s\n' 'Targets:' '  install                  Install OpenCode workflow artifacts' '  install-opencode         Alias for install' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall                Remove package-managed OpenCode workflow artifacts' '  uninstall-opencode       Alias for uninstall' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  update-opencode-agents   Replace agents in the global OpenCode config' '  test                     Run lifecycle and structure checks' '  structure-test           Validate skills and OpenCode agent structure'
 
 install:
 	@./global/install-global-agent-workflow.sh

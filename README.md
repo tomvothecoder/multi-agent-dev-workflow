@@ -1,4 +1,4 @@
-# Multi-Agent Orchestration Skills
+# Multi-Agent Orchestration Across LLM Providers
 
 Model-neutral global skills plus an OpenCode multi-agent configuration for a coding workflow. Model selection lives in the OpenCode agent configuration, not in skills.
 
@@ -44,7 +44,7 @@ See the [Quickstart](QUICKSTART.md) for OpenCode installation and lifecycle comm
 
 ## Repository layout
 
-- `global/`: installable skills, prompts, and tool configurations.
+- `global/`: installable skills and OpenCode configuration.
 - `profiles/`: optional environment profiles.
 - `docs/`: focused setup and usage documentation.
 - `test/`: lifecycle and structure checks.
