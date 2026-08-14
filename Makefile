@@ -1,9 +1,9 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-codex install-claude install-copilot install-opencode uninstall uninstall-codex uninstall-claude uninstall-copilot uninstall-opencode update-opencode-agents test structure-test
+.PHONY: help install install-codex install-claude install-copilot install-opencode install-nersc-rules uninstall uninstall-codex uninstall-claude uninstall-copilot uninstall-opencode uninstall-nersc-rules update-opencode-agents test structure-test
 
 help:
-	@printf '%s\n' 'Targets:' '  install                  Install workflow artifacts for all supported tools' '  install-codex            Install Codex workflow artifacts only' '  install-claude           Install Claude workflow artifacts only' '  install-copilot          Install Copilot workflow artifacts only' '  install-opencode         Install OpenCode workflow artifacts only' '  uninstall                Remove global workflow artifacts installed by this package' '  uninstall-codex          Remove Codex workflow artifacts only' '  uninstall-claude         Remove Claude workflow artifacts only' '  uninstall-copilot        Remove Copilot workflow artifacts only' '  uninstall-opencode       Remove OpenCode workflow artifacts only' '  update-opencode-agents   Replace agents in the global OpenCode config' '  test                     Run lifecycle and structure checks' '  structure-test           Validate skill, prompt, and OpenCode agent structure'
+	@printf '%s\n' 'Targets:' '  install                  Install workflow artifacts for all supported tools' '  install-codex            Install Codex workflow artifacts only' '  install-claude           Install Claude workflow artifacts only' '  install-copilot          Install Copilot workflow artifacts only' '  install-opencode         Install OpenCode workflow artifacts only' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall                Remove global workflow artifacts installed by this package' '  uninstall-codex          Remove Codex workflow artifacts only' '  uninstall-claude         Remove Claude workflow artifacts only' '  uninstall-copilot        Remove Copilot workflow artifacts only' '  uninstall-opencode       Remove OpenCode workflow artifacts only' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  update-opencode-agents   Replace agents in the global OpenCode config' '  test                     Run lifecycle and structure checks' '  structure-test           Validate skill, prompt, and OpenCode agent structure'
 
 install:
 	@./global/install-global-agent-workflow.sh
@@ -20,6 +20,9 @@ install-copilot:
 install-opencode:
 	@./global/install-global-agent-workflow.sh opencode
 
+install-nersc-rules:
+	@./profiles/nersc/install-nersc-filesystem-rules.sh
+
 uninstall:
 	@./global/uninstall-global-agent-workflow.sh
 
@@ -34,6 +37,9 @@ uninstall-copilot:
 
 uninstall-opencode:
 	@./global/uninstall-global-agent-workflow.sh opencode
+
+uninstall-nersc-rules:
+	@./profiles/nersc/uninstall-nersc-filesystem-rules.sh
 
 update-opencode-agents:
 	@command -v jq >/dev/null 2>&1 || { printf '%s\n' 'Error: jq is required.' >&2; exit 1; }; \

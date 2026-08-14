@@ -59,10 +59,17 @@ than invoking a root-level script.
 ```bash
 make install
 make uninstall
+make install-nersc-rules # optional NERSC filesystem safety profile
 make test
 ```
 
 Installation refuses to replace unmanaged tool paths. Uninstall removes package-managed links and legacy copied Copilot workflow files while preserving unrelated configuration.
+
+## NERSC Filesystem Rules
+
+For NERSC environments, run `make install-nersc-rules`. It installs bounded-filesystem-discovery rules for Codex, Claude, OpenCode, and Copilot, with a canonical copy at `~/.config/ai-instructions/nersc-filesystem.md`. The profile preserves existing instruction files and can be removed with `make uninstall-nersc-rules`.
+
+When the workflow package manages Codex's `~/.codex/AGENTS.md` symlink, the profile installs a dedicated `nersc-filesystem` Codex skill instead of changing that managed file.
 
 ## Use
 

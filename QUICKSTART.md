@@ -14,10 +14,13 @@ make uninstall-opencode
 make uninstall-codex
 make uninstall-claude
 make uninstall-copilot
+# Optional, for NERSC environments:
+make install-nersc-rules
 ```
 
 The supported lifecycle scripts are `global/install-global-agent-workflow.sh` and
 `global/uninstall-global-agent-workflow.sh`; the Make targets are their preferred interface.
+The optional NERSC profile lives under `profiles/nersc/` and preserves existing instructions.
 
 ## Start
 

@@ -7,6 +7,11 @@ PROMPTS=(workflow-orchestrate workflow-plan workflow-implement workflow-review w
 OPENCODE_AGENTS=(workflow-orchestrator workflow-reviewer)
 COPILOT_AGENTS=(workflow-orchestrator explore general workflow-reviewer)
 
+test -f "$ROOT/profiles/nersc/nersc-filesystem.md"
+test -x "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
+test -x "$ROOT/profiles/nersc/uninstall-nersc-filesystem-rules.sh"
+rg -q 'Never recursively traverse' "$ROOT/profiles/nersc/nersc-filesystem.md"
+
 for skill in "${SKILLS[@]}"; do
   path="$ROOT/global/skills/$skill/SKILL.md"
   rg -q "^name: $skill$" "$path"

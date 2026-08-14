@@ -130,4 +130,37 @@ for tool in codex claude copilot opencode; do
   rm -rf "$SCOPED_HOME"
 done
 
+NERSC_HOME="$(mktemp -d)"
+mkdir -p "$NERSC_HOME/.claude" "$NERSC_HOME/.config/opencode" "$NERSC_HOME/.copilot/instructions"
+printf 'Claude custom instructions\n' > "$NERSC_HOME/.claude/CLAUDE.md"
+printf 'OpenCode custom instructions\n' > "$NERSC_HOME/.config/opencode/AGENTS.md"
+
+make -s -C "$ROOT" install-nersc-rules HOME="$NERSC_HOME"
+make -s -C "$ROOT" install-nersc-rules HOME="$NERSC_HOME"
+
+test -f "$NERSC_HOME/.config/ai-instructions/nersc-filesystem.md"
+test "$(rg -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$NERSC_HOME/.claude/CLAUDE.md")" = 1
+test "$(rg -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$NERSC_HOME/.config/opencode/AGENTS.md")" = 1
+test "$(rg -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$NERSC_HOME/.copilot/instructions/nersc-filesystem.instructions.md")" = 1
+rg -q '^Claude custom instructions$' "$NERSC_HOME/.claude/CLAUDE.md"
+rg -q '^applyTo: "\*\*"$' "$NERSC_HOME/.copilot/instructions/nersc-filesystem.instructions.md"
+
+make -s -C "$ROOT" uninstall-nersc-rules HOME="$NERSC_HOME"
+test ! -e "$NERSC_HOME/.config/ai-instructions/nersc-filesystem.md"
+test "$(grep -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$NERSC_HOME/.claude/CLAUDE.md" || true)" = 0
+test "$(grep -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$NERSC_HOME/.config/opencode/AGENTS.md" || true)" = 0
+test "$(grep -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$NERSC_HOME/.copilot/instructions/nersc-filesystem.instructions.md" || true)" = 0
+rg -q '^Claude custom instructions$' "$NERSC_HOME/.claude/CLAUDE.md"
+rm -rf "$NERSC_HOME"
+
+NERSC_MANAGED_HOME="$(mktemp -d)"
+make -s -C "$ROOT" install-codex HOME="$NERSC_MANAGED_HOME"
+make -s -C "$ROOT" install-nersc-rules HOME="$NERSC_MANAGED_HOME"
+test -L "$NERSC_MANAGED_HOME/.codex/AGENTS.md"
+test -f "$NERSC_MANAGED_HOME/.codex/skills/nersc-filesystem/SKILL.md"
+test "$(grep -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$NERSC_MANAGED_HOME/.config/agent-workflow/AGENTS.md" || true)" = 0
+make -s -C "$ROOT" uninstall-nersc-rules HOME="$NERSC_MANAGED_HOME"
+test ! -e "$NERSC_MANAGED_HOME/.codex/skills/nersc-filesystem/SKILL.md"
+rm -rf "$NERSC_MANAGED_HOME"
+
 printf 'Lifecycle test passed.\n'
