@@ -6,10 +6,9 @@ SLIM_TEMPLATE="$ROOT/global/opencode/oh-my-opencode-slim.jsonc"
 HOST_TEMPLATE="$ROOT/global/opencode/opencode.jsonc"
 APPEND_TEMPLATE="$ROOT/global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
 
-test -f "$ROOT/profiles/nersc/nersc-filesystem.md"
 test -x "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
 test -x "$ROOT/profiles/nersc/uninstall-nersc-filesystem-rules.sh"
-rg -q 'Never recursively traverse' "$ROOT/profiles/nersc/nersc-filesystem.md"
+! test -e "$ROOT/profiles/nersc/nersc-filesystem.md"
 
 test ! -e "$ROOT/global/AGENTS.md"
 test ! -e "$ROOT/global/skills"

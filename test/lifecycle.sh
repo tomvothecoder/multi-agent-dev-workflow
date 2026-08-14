@@ -53,4 +53,61 @@ HOME="$UNMANAGED_HOME" "$ROOT/global/uninstall-global-agent-workflow.sh" >"$UNMA
 test -f "$UNMANAGED_HOME/.config/opencode/oh-my-opencode-slim.jsonc"
 rm -rf "$UNMANAGED_HOME"
 
+# NERSC rules append bounded blocks to every supported instruction target.
+NERSC_HOME="$(mktemp -d)"
+for file in \
+  "$NERSC_HOME/.codex/AGENTS.md" \
+  "$NERSC_HOME/.claude/CLAUDE.md" \
+  "$NERSC_HOME/.config/opencode/AGENTS.md" \
+  "$NERSC_HOME/.copilot/instructions/nersc-filesystem.instructions.md"; do
+  mkdir -p "$(dirname "$file")"
+  printf 'Custom instructions\n' > "$file"
+done
+printf '%s\n' '---' 'applyTo: "**"' '---' '' 'Custom instructions' > "$NERSC_HOME/.copilot/instructions/nersc-filesystem.instructions.md"
+HOME="$NERSC_HOME" "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
+HOME="$NERSC_HOME" "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
+test -f "$NERSC_HOME/.config/ai-instructions/nersc-filesystem.md"
+for file in \
+  "$NERSC_HOME/.codex/AGENTS.md" \
+  "$NERSC_HOME/.claude/CLAUDE.md" \
+  "$NERSC_HOME/.config/opencode/AGENTS.md" \
+  "$NERSC_HOME/.copilot/instructions/nersc-filesystem.instructions.md"; do
+  test "$(rg -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$file")" = 1
+  rg -q '^Custom instructions$' "$file"
+done
+HOME="$NERSC_HOME" "$ROOT/profiles/nersc/uninstall-nersc-filesystem-rules.sh"
+HOME="$NERSC_HOME" "$ROOT/profiles/nersc/uninstall-nersc-filesystem-rules.sh"
+test ! -e "$NERSC_HOME/.config/ai-instructions/nersc-filesystem.md"
+for file in \
+  "$NERSC_HOME/.codex/AGENTS.md" \
+  "$NERSC_HOME/.claude/CLAUDE.md" \
+  "$NERSC_HOME/.config/opencode/AGENTS.md" \
+  "$NERSC_HOME/.copilot/instructions/nersc-filesystem.instructions.md"; do
+  ! rg -Fq '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$file"
+  rg -q '^Custom instructions$' "$file"
+done
+test "$(rg -n '^---$|^applyTo: "\*\*"$' "$NERSC_HOME/.copilot/instructions/nersc-filesystem.instructions.md" | paste -sd ' ' -)" = '1:--- 2:applyTo: "**" 3:---'
+rm -rf "$NERSC_HOME"
+
+# New Copilot files are removed when they contain only profile-owned content.
+COPILOT_HOME="$(mktemp -d)"
+HOME="$COPILOT_HOME" "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
+COPILOT_FILE="$COPILOT_HOME/.copilot/instructions/nersc-filesystem.instructions.md"
+test "$(rg -n '^---$|^applyTo: "\*\*"$' "$COPILOT_FILE" | paste -sd ' ' -)" = '1:--- 2:applyTo: "**" 3:---'
+HOME="$COPILOT_HOME" "$ROOT/profiles/nersc/uninstall-nersc-filesystem-rules.sh"
+test ! -e "$COPILOT_FILE"
+rm -rf "$COPILOT_HOME"
+
+# Symlinked Codex instructions are preserved.
+CODEX_LINK_HOME="$(mktemp -d)"
+mkdir -p "$CODEX_LINK_HOME/.codex" "$CODEX_LINK_HOME/.config/agent-workflow"
+printf 'Package-managed instructions\n' > "$CODEX_LINK_HOME/.config/agent-workflow/AGENTS.md"
+ln -s "$CODEX_LINK_HOME/.config/agent-workflow/AGENTS.md" "$CODEX_LINK_HOME/.codex/AGENTS.md"
+HOME="$CODEX_LINK_HOME" "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
+test -L "$CODEX_LINK_HOME/.codex/AGENTS.md"
+rg -q '^Package-managed instructions$' "$CODEX_LINK_HOME/.config/agent-workflow/AGENTS.md"
+HOME="$CODEX_LINK_HOME" "$ROOT/profiles/nersc/uninstall-nersc-filesystem-rules.sh"
+test -L "$CODEX_LINK_HOME/.codex/AGENTS.md"
+rm -rf "$CODEX_LINK_HOME"
+
 printf 'Lifecycle test passed.\n'

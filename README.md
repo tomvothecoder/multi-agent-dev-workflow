@@ -1,26 +1,34 @@
 # Multi-Agent Orchestration with OpenCode
 
-This repository provides oh-my-opencode-slim hybrid customizations for an OpenCode-based multi-agent workflow.
+This repository provides `oh-my-opencode-slim` hybrid customizations for an OpenCode-based multi-agent workflow that I use for bounded, parallelizable software engineering work. It uses specialized agents for discovery, research, implementation, review, and human approval.
+
+My setup is:
+
+- GPT Plus Plan ($20/mo) - for planning, coordination, and high-risk architecture
+- GitHub Copilot Enterprise - for code review
+- LivAI API (LLNL-only) - for bounded implementation work when LLNL network access is available
 
 ## Contents
 
 - [Why?](#why)
 - [Agent workflow](#agent-workflow)
 - [Installation and setup](#installation-and-setup)
-- [Configuration boundary and customizations](#configuration-boundary-and-customizations)
-- [Lifecycle](#lifecycle)
+- [Customized configuration of oh-my-opencode-slim](#customized-configuration-of-oh-my-opencode-slim)
+- [Quickstart](#quickstart)
 - [Further documentation](#further-documentation)
 - [Repository layout](#repository-layout)
 
 ## Why?
 
 OpenCode and oh-my-opencode-slim provide an open-source, flexible foundation for coordinating specialized coding agents. The setup is not tied to a single provider: it can use OpenAI, GitHub Copilot, LivAI, and other configured models.
+
 OpenCode provides the runtime and keeps the core configuration under your control. Slim adds agent presets, specialized roles, and controlled delegation for discovery, implementation, review, automated checks, and human approval.
-For LLNL and NERSC users, the workflow can use LivAI as a fallback for bounded implementation work. It also includes filesystem rules that help align AI-assisted work with NERSC usage policies.
+
+For LLNL users, the workflow can use LivAI as a fallback for bounded implementation work when access to LLNL network is available.
 
 ## Agent Workflow
 
-This workflow uses specialized agents from [oh-my-opencode-slim’s Pantheon](https://github.com/alvinunreal/oh-my-opencode-slim#%EF%B8%8F-meet-the-pantheon), plus custom review and fallback workers.
+This workflow uses the 7 specialized agents from [oh-my-opencode-slim’s Pantheon](https://github.com/alvinunreal/oh-my-opencode-slim#%EF%B8%8F-meet-the-pantheon), plus custom review and fallback workers.
 
 The configuration assigns lower-cost models to focused discovery and research, uses stronger reasoning for coordination and architecture, and keeps implementation work bounded and parallelizable. Independent review, repository checks, and human approval provide safeguards for meaningful changes.
 
@@ -74,7 +82,9 @@ Then install this repository's Slim customizations:
 make install
 ```
 
-## Configuration boundary and customizations
+## Customized configuration of oh-my-opencode-slim
+
+The following table summarizes the differences from stock Slim.
 
 ### Hybrid customizations
 
@@ -100,13 +110,13 @@ For NERSC environments, run:
 make install-nersc-rules
 ```
 
-This installs bounded-filesystem-discovery rules for OpenCode. The canonical copy is [`~/.config/ai-instructions/nersc-filesystem.md`](../profiles/nersc/nersc-filesystem.md). The profile preserves existing OpenCode instructions and can be removed with:
+This installs bounded-filesystem-discovery rules for OpenCode, GitHub Copilot, Codex, and Claude Code. The profile manages its canonical copy at `~/.config/ai-instructions/nersc-filesystem.md`, preserves existing instruction-file content, and can be removed with:
 
 ```bash
 make uninstall-nersc-rules
 ```
 
-## Lifecycle
+## Quickstart
 
 See the [Quickstart](QUICKSTART.md) for more workflow details, including the default flow, hybrid workflow preferences, and lifecycle commands.
 
