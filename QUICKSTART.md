@@ -71,6 +71,25 @@ flowchart TD
 
 For small tasks, use the orchestrator alone. For medium tasks, add exploration for unfamiliar code and an implementer only for bounded work. For large tasks, parallelize only independent discovery or non-overlapping implementation scopes, then review the assembled final diff.
 
+### oh-my-opencode-slim
+
+[oh-my-opencode-slim](https://github.com/alvinunreal/oh-my-opencode-slim) is an OpenCode agent-orchestration plugin for coordinating specialized agents. Install it with:
+
+```bash
+bunx oh-my-opencode-slim@latest install
+# or
+npx oh-my-opencode-slim@latest install
+```
+
+Follow its [official installation guide](https://github.com/alvinunreal/oh-my-opencode-slim/blob/master/docs/installation.md) for the remaining setup steps.
+
+[`global/opencode/opencode.jsonc`](global/opencode/opencode.jsonc) is an OpenCode template tailored to run with oh-my-opencode-slim: it registers the plugin in its `plugin` array and is intentionally customized for this repository's single-level workflow.
+
+- `default_agent: "workflow-orchestrator"` and `subagent_depth: 1` enforce a single-level orchestration flow.
+- Custom `workflow-orchestrator`, `explore`, `workflow-reviewer`, and `general` agent definitions provide role-specific model routing and least-privilege permissions.
+- Built-in `build` and `plan` agents are disabled to keep the configured workflow path.
+- This is a native OpenCode agent configuration alongside Slim plugin registration; it does not use Slim's separate `oh-my-opencode-slim.jsonc` custom-agent/prompt-override convention.
+
 ## VS Code Agent Setup
 
 `make install` or `make install-copilot` installs `workflow-orchestrator`, `explore`, `general`, and `workflow-reviewer` under `~/.copilot/agents/`. Reload VS Code, select `workflow-orchestrator` in Chat, and submit the task. `/workflow-orchestrate` starts the same custom agent; other `/workflow-*` prompts remain available for focused specialist work.
