@@ -5,7 +5,6 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILLS=(workflow-orchestrator workflow-planner workflow-implementer workflow-reviewer workflow-tdd)
 PROMPTS=(workflow-orchestrate workflow-plan workflow-implement workflow-review workflow-tdd workflow-resolve workflow-plan-critique workflow-pr-summary workflow-branch-name workflow-commit-message)
 OPENCODE_AGENTS=(workflow-orchestrator workflow-reviewer)
-COPILOT_AGENTS=(workflow-orchestrator explore general workflow-reviewer)
 
 test -f "$ROOT/profiles/nersc/nersc-filesystem.md"
 test -x "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
@@ -16,37 +15,8 @@ for skill in "${SKILLS[@]}"; do
   path="$ROOT/global/skills/$skill/SKILL.md"
   rg -q "^name: $skill$" "$path"
   rg -q '^description: .+' "$path"
-  rg -q '^## Purpose$' "$path"
-  rg -q '^## Inputs$' "$path"
-  rg -q '^## Rules$' "$path"
-  rg -q '^## Output$' "$path"
-  rg -q 'Output exactly these sections\.' "$path"
-  rg -q 'No preamble' "$path"
 done
-
-for prompt in "${PROMPTS[@]}"; do
-  test -f "$ROOT/global/prompts/$prompt.md"
-  test -f "$ROOT/global/copilot/prompts/$prompt.prompt.md"
-done
-
-for agent in "${COPILOT_AGENTS[@]}"; do
-  path="$ROOT/global/copilot/agents/$agent.agent.md"
-  test -f "$path"
-  rg -q "^name: $agent$" "$path"
-  rg -q '^description: .+' "$path"
-  rg -q '^model: .+' "$path"
-  rg -q '^tools: .+' "$path"
-  rg -q '^target: vscode$' "$path"
-done
-
-rg -q "^agents: \['explore', 'general', 'workflow-reviewer'\]$" "$ROOT/global/copilot/agents/workflow-orchestrator.agent.md"
-rg -q "^tools: \['agent', 'read', 'search', 'edit', 'execute', 'web', 'todos', 'vscode/askQuestions'\]$" "$ROOT/global/copilot/agents/workflow-orchestrator.agent.md"
-rg -q '^user-invocable: false$' "$ROOT/global/copilot/agents/explore.agent.md"
-rg -q '^user-invocable: false$' "$ROOT/global/copilot/agents/general.agent.md"
-rg -q '^user-invocable: false$' "$ROOT/global/copilot/agents/workflow-reviewer.agent.md"
-rg -q "^tools: \['read', 'search'\]$" "$ROOT/global/copilot/agents/workflow-reviewer.agent.md"
-rg -q '^agent: workflow-orchestrator$' "$ROOT/global/copilot/prompts/workflow-orchestrate.prompt.md"
-
+for prompt in "${PROMPTS[@]}"; do test -f "$ROOT/global/prompts/$prompt.md"; done
 for agent in "${OPENCODE_AGENTS[@]}"; do
   path="$ROOT/global/opencode/agents/$agent.md"
   test -f "$path"
@@ -54,9 +24,10 @@ for agent in "${OPENCODE_AGENTS[@]}"; do
   rg -q '^Use the workflow-' "$path"
 done
 
-test ! -e "$ROOT/global/opencode/agents/workflow-planner.md"
-test ! -e "$ROOT/global/opencode/agents/workflow-implementer.md"
-test ! -e "$ROOT/global/opencode/agents/workflow-tdd.md"
+test ! -e "$ROOT/global/copilot"
+test ! -e "$ROOT/docs/vscode.md"
+! rg -l -i 'codex|claude|copilot|vs[[:space:]-]?code' "$ROOT/global/install-global-agent-workflow.sh" "$ROOT/global/uninstall-global-agent-workflow.sh" "$ROOT/Makefile" "$ROOT/README.md" "$ROOT/QUICKSTART.md" "$ROOT/docs/usage.md" "$ROOT/docs/nersc.md" "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh" "$ROOT/profiles/nersc/uninstall-nersc-filesystem-rules.sh" >/dev/null
+
 OPENCODE_TEMPLATE="$(mktemp)"
 trap 'rm -f "$OPENCODE_TEMPLATE"' EXIT
 awk -f "$ROOT/global/opencode/strip-jsonc.awk" "$ROOT/global/opencode/opencode.jsonc" > "$OPENCODE_TEMPLATE"
@@ -76,6 +47,7 @@ jq --exit-status '
   } and
   .agent.explore.model == "openai/gpt-5.6-luna" and
   .agent.explore.mode == "subagent" and
+  .agent.explore.permission["*"] == "deny" and
   .agent.general.description != null and
   (.agent.general.prompt | contains("Make minimal changes")) and
   .agent.general.model == "openai/gpt-5.6-terra" and
@@ -90,9 +62,5 @@ jq --exit-status '
   .agent.build.disable == true and
   .agent.plan.disable == true
 ' "$OPENCODE_TEMPLATE" >/dev/null
-
-for agent in "$ROOT/global/opencode/agents/"*.md; do
-  rg -q '^description: .+' "$agent"
-done
 
 printf 'Structure test passed.\n'

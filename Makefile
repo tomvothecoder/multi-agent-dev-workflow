@@ -1,21 +1,12 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-codex install-claude install-copilot install-opencode install-nersc-rules uninstall uninstall-codex uninstall-claude uninstall-copilot uninstall-opencode uninstall-nersc-rules update-opencode-agents test structure-test
+.PHONY: help install install-opencode install-nersc-rules uninstall uninstall-opencode uninstall-nersc-rules update-opencode-agents test structure-test
 
 help:
-	@printf '%s\n' 'Targets:' '  install                  Install workflow artifacts for all supported tools' '  install-codex            Install Codex workflow artifacts only' '  install-claude           Install Claude workflow artifacts only' '  install-copilot          Install Copilot workflow artifacts only' '  install-opencode         Install OpenCode workflow artifacts only' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall                Remove global workflow artifacts installed by this package' '  uninstall-codex          Remove Codex workflow artifacts only' '  uninstall-claude         Remove Claude workflow artifacts only' '  uninstall-copilot        Remove Copilot workflow artifacts only' '  uninstall-opencode       Remove OpenCode workflow artifacts only' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  update-opencode-agents   Replace agents in the global OpenCode config' '  test                     Run lifecycle and structure checks' '  structure-test           Validate skill, prompt, and OpenCode agent structure'
+	@printf '%s\n' 'Targets:' '  install                  Install OpenCode workflow artifacts' '  install-opencode         Alias for install' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall                Remove package-managed OpenCode workflow artifacts' '  uninstall-opencode       Alias for uninstall' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  update-opencode-agents   Replace agents in the global OpenCode config' '  test                     Run lifecycle and structure checks' '  structure-test           Validate skill, prompt, and OpenCode agent structure'
 
 install:
 	@./global/install-global-agent-workflow.sh
-
-install-codex:
-	@./global/install-global-agent-workflow.sh codex
-
-install-claude:
-	@./global/install-global-agent-workflow.sh claude
-
-install-copilot:
-	@./global/install-global-agent-workflow.sh copilot
 
 install-opencode:
 	@./global/install-global-agent-workflow.sh opencode
@@ -25,15 +16,6 @@ install-nersc-rules:
 
 uninstall:
 	@./global/uninstall-global-agent-workflow.sh
-
-uninstall-codex:
-	@./global/uninstall-global-agent-workflow.sh codex
-
-uninstall-claude:
-	@./global/uninstall-global-agent-workflow.sh claude
-
-uninstall-copilot:
-	@./global/uninstall-global-agent-workflow.sh copilot
 
 uninstall-opencode:
 	@./global/uninstall-global-agent-workflow.sh opencode

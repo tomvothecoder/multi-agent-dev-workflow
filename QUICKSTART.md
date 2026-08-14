@@ -4,16 +4,10 @@
 
 ```bash
 make install
-# Or install only the tool you use:
+# Equivalent explicit OpenCode alias:
 make install-opencode
-make install-codex
-make install-claude
-make install-copilot
-# Remove only one tool's workflow artifacts:
+# Equivalent uninstall alias:
 make uninstall-opencode
-make uninstall-codex
-make uninstall-claude
-make uninstall-copilot
 # Optional, for NERSC environments:
 make install-nersc-rules
 ```
@@ -81,18 +75,11 @@ bunx oh-my-opencode-slim@latest install
 
 See the [oh-my-opencode-slim integration](docs/oh-my-opencode-slim.md) for installation, template customizations, and configuration boundaries.
 
-## VS Code Agent Setup
-
-`make install` or `make install-copilot` installs `workflow-orchestrator`, `explore`, `general`, and `workflow-reviewer` under `~/.copilot/agents/`. Reload VS Code, select `workflow-orchestrator` in Chat, and submit the task. `/workflow-orchestrate` starts the same custom agent; other `/workflow-*` prompts remain available for focused specialist work.
-
-The custom agents mirror OpenCode's Sol/Luna/Terra/Claude model routing and tool boundaries. Keep nested subagents disabled (the VS Code default) for one-level delegation. Model availability depends on your Copilot plan and organization policy.
-
 ## Further reading
 
 - [Usage](docs/usage.md)
 - [NERSC filesystem rules](docs/nersc.md)
 - [OpenCode configuration](docs/opencode.md)
-- [VS Code agent configuration](docs/vscode.md)
 - [oh-my-opencode-slim integration](docs/oh-my-opencode-slim.md)
 
 ## Lifecycle

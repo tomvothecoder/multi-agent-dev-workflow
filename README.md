@@ -1,6 +1,6 @@
 # Multi-Agent Orchestration Skills
 
-Model-neutral global skills plus native OpenCode and VS Code multi-agent configurations for a coding workflow. Model selection lives in each tool's agent configuration, not in skills.
+Model-neutral global skills plus an OpenCode multi-agent configuration for a coding workflow. Model selection lives in the OpenCode agent configuration, not in skills.
 
 ## Workflow
 
@@ -32,7 +32,7 @@ Task:
 <task>
 ```
 
-See the [Quickstart](QUICKSTART.md) for tool-specific installation and lifecycle commands.
+See the [Quickstart](QUICKSTART.md) for OpenCode installation and lifecycle commands.
 
 ## Documentation
 
@@ -40,7 +40,6 @@ See the [Quickstart](QUICKSTART.md) for tool-specific installation and lifecycle
 - [Usage](docs/usage.md)
 - [NERSC filesystem rules](docs/nersc.md)
 - [OpenCode configuration](docs/opencode.md)
-- [VS Code agent configuration](docs/vscode.md)
 - [oh-my-opencode-slim integration](docs/oh-my-opencode-slim.md)
 
 ## Repository layout
