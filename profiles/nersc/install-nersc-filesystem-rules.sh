@@ -96,4 +96,3 @@ fi
 append_instructions "$COPILOT_FILE"
 
 printf '\nNERSC filesystem rules installed:\n'
-printf '  Canonical: %s\n' "$CANONICAL_FILE"
