@@ -12,13 +12,14 @@ ln -s "$TEST_HOME/.config/agent-workflow/opencode/agents/workflow-implementer.md
 
 HOME="$TEST_HOME" "$ROOT/global/install-global-agent-workflow.sh"
 
-printf '%s\n' '{"theme":"user-theme","agent":{"unrelated":{"model":"user/model"}}}' > "$TEST_HOME/.config/opencode/opencode.json"
+printf '%s\n' '// Preserve user settings while updating agents.' '{"theme":"user-theme","agent":{"unrelated":{"model":"user/model"}}}' > "$TEST_HOME/.config/opencode/opencode.jsonc"
 make -s -C "$ROOT" update-opencode-agents HOME="$TEST_HOME"
-jq --exit-status --slurpfile source "$ROOT/global/opencode/opencode.json" '
+awk -f "$ROOT/global/opencode/strip-jsonc.awk" "$ROOT/global/opencode/opencode.jsonc" > "$TEST_HOME/source.json"
+jq --exit-status --slurpfile source "$TEST_HOME/source.json" '
   .theme == "user-theme" and
   .agent == $source[0].agent and
   has("default_agent") == false
-' "$TEST_HOME/.config/opencode/opencode.json" >/dev/null
+' "$TEST_HOME/.config/opencode/opencode.jsonc" >/dev/null
 
 test -f "$TEST_HOME/.config/agent-workflow/AGENTS.md"
 test -L "$TEST_HOME/.codex/AGENTS.md"

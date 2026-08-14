@@ -46,7 +46,7 @@ global/
     instructions/agent-workflow.instructions.md
     prompts/*.prompt.md
   opencode/
-    opencode.json
+    opencode.jsonc
     agents/workflow-*.md
 ```
 
@@ -106,9 +106,9 @@ For OpenCode, `workflow-orchestrator` is the primary agent installed at `~/.conf
 
 ## OpenCode Configuration
 
-`global/opencode/opencode.json` is a model and permission template, not an installed configuration. Run `make update-opencode-agents` to replace only the `agent` section in `~/.config/opencode/opencode.json`; other user configuration remains unchanged. Configure the template's recommended `default_agent` and `subagent_depth` values separately when needed. It maps orchestration to Sol, discovery to Luna, implementation to Terra, and review to Claude Sonnet 5.
+`global/opencode/opencode.jsonc` is a model and permission template, not an installed configuration. Run `make update-opencode-agents` to replace only the `agent` section in `~/.config/opencode/opencode.jsonc`; other user configuration remains unchanged. Configure the template's recommended `default_agent` and `subagent_depth` values separately when needed. It maps orchestration to Sol, discovery to Luna, implementation to Terra, and review to Claude Sonnet 5.
 
-Agent Markdown files contain role instructions only. Skills contain portable workflow behavior. Do not duplicate long role prompts in `opencode.json`.
+Agent Markdown files contain role instructions only. Skills contain portable workflow behavior. Do not duplicate long role prompts in `opencode.jsonc`.
 
 Restart OpenCode after installing agent files or changing its configuration.
 

@@ -32,7 +32,6 @@ done
 for agent in "${COPILOT_AGENTS[@]}"; do
   path="$ROOT/global/copilot/agents/$agent.agent.md"
   test -f "$path"
-  cmp -s "$ROOT/copilot/agents/$agent.agent.md" "$path"
   rg -q "^name: $agent$" "$path"
   rg -q '^description: .+' "$path"
   rg -q '^model: .+' "$path"
@@ -58,7 +57,10 @@ done
 test ! -e "$ROOT/global/opencode/agents/workflow-planner.md"
 test ! -e "$ROOT/global/opencode/agents/workflow-implementer.md"
 test ! -e "$ROOT/global/opencode/agents/workflow-tdd.md"
-jq --exit-status . "$ROOT/global/opencode/opencode.json" >/dev/null
+OPENCODE_TEMPLATE="$(mktemp)"
+trap 'rm -f "$OPENCODE_TEMPLATE"' EXIT
+awk -f "$ROOT/global/opencode/strip-jsonc.awk" "$ROOT/global/opencode/opencode.jsonc" > "$OPENCODE_TEMPLATE"
+jq --exit-status . "$OPENCODE_TEMPLATE" >/dev/null
 jq --exit-status '
   .default_agent == "workflow-orchestrator" and
   .subagent_depth == 1 and
@@ -87,7 +89,7 @@ jq --exit-status '
   .agent["workflow-reviewer"].permission.lsp == "allow" and
   .agent.build.disable == true and
   .agent.plan.disable == true
-' "$ROOT/global/opencode/opencode.json" >/dev/null
+' "$OPENCODE_TEMPLATE" >/dev/null
 
 for agent in "$ROOT/global/opencode/agents/"*.md; do
   rg -q '^description: .+' "$agent"

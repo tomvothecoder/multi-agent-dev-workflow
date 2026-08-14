@@ -43,12 +43,15 @@ uninstall-nersc-rules:
 
 update-opencode-agents:
 	@command -v jq >/dev/null 2>&1 || { printf '%s\n' 'Error: jq is required.' >&2; exit 1; }; \
-	source="global/opencode/opencode.json"; \
-	config="$(HOME)/.config/opencode/opencode.json"; \
+	source="global/opencode/opencode.jsonc"; \
+	config="$(HOME)/.config/opencode/opencode.jsonc"; \
 	test -f "$$config" || { printf 'Error: %s does not exist.\n' "$$config" >&2; exit 1; }; \
-	tmp=$$(mktemp "$$config.tmp.XXXXXX") || exit 1; \
-	trap 'rm -f "$$tmp"' EXIT; \
-	jq --slurpfile source "$$source" '.agent = $$source[0].agent' "$$config" > "$$tmp" && mv "$$tmp" "$$config"
+	tmp_source=$$(mktemp "$$config.source.XXXXXX") || exit 1; \
+	tmp_config=$$(mktemp "$$config.tmp.XXXXXX") || exit 1; \
+	trap 'rm -f "$$tmp_source" "$$tmp_config"' EXIT; \
+	awk -f global/opencode/strip-jsonc.awk "$$source" > "$$tmp_source" && \
+	awk -f global/opencode/strip-jsonc.awk "$$config" | jq --slurpfile source "$$tmp_source" '.agent = $$source[0].agent' > "$$tmp_config" && \
+	mv "$$tmp_config" "$$config"
 
 test:
 	@./test/lifecycle.sh
