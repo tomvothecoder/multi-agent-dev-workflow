@@ -51,6 +51,8 @@ global/
 ```
 
 `roles/` was removed because it duplicated the installable skill definitions.
+The lifecycle scripts live only under `global/`; use the Make targets below rather
+than invoking a root-level script.
 
 ## Commands
 

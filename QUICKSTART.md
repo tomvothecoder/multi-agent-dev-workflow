@@ -16,6 +16,9 @@ make uninstall-claude
 make uninstall-copilot
 ```
 
+The supported lifecycle scripts are `global/install-global-agent-workflow.sh` and
+`global/uninstall-global-agent-workflow.sh`; the Make targets are their preferred interface.
+
 ## Start
 
 Use one primary agent as orchestrator:
