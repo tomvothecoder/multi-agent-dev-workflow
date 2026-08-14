@@ -1,32 +1,5 @@
 # Quickstart: Slim Hybrid Workflow
 
-## Install
-
-Install oh-my-opencode-slim with its official non-interactive command:
-
-```bash
-bunx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subagents=yes
-# Fallback when Bun is unavailable:
-npx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subagents=yes
-```
-
-Then install this repository's Slim customizations:
-
-```bash
-make install
-```
-
-`make install` links only the Slim configuration and hybrid append into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It intentionally never overwrites the user-owned core `opencode.json` or `opencode.jsonc`. Restart OpenCode after either installation or configuration changes.
-
-## Start
-
-```text
-Use orchestrator.
-
-Task:
-<paste task>
-```
-
 ## Default flow
 
 ```mermaid
@@ -50,11 +23,51 @@ flowchart TD
 
 Reviewers receive the task, accepted plan, implementation summary, full diff, and test output. Agent agreement is not a substitute for checks or human approval.
 
+## Using the workflow
+
+Use `orchestrator` as the primary agent:
+
+```text
+Use orchestrator.
+
+Task:
+<task>
+```
+
+Do not assign concurrent workers overlapping file ownership. Send completed work to `copilot-reviewer` for independent review when warranted, and resolve only accepted findings.
+
+### Handoff format
+
+Keep handoffs concise and include the changed files, checks, risks, and review focus. Use `None.` for an empty section.
+
+```text
+Changed:
+- src/example.ts: preserve empty input.
+
+Checks:
+- npm test: pass.
+
+Risks:
+- None.
+
+Review focus:
+- empty-input behavior.
+```
+
 ## Configuration
 
-The core OpenCode configuration is user-owned. This repository keeps its separate core host template in `global/opencode/opencode.jsonc`, its Slim plugin configuration in `global/opencode/oh-my-opencode-slim.jsonc`, and preset-specific orchestrator instructions in `global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md`.
+The core OpenCode configuration is user-owned. This repository's separate core host template is `global/opencode/opencode.jsonc`; the Slim plugin configuration is `global/opencode/oh-my-opencode-slim.jsonc`.
 
-See [OpenCode configuration](docs/opencode.md) and [oh-my-opencode-slim integration](docs/oh-my-opencode-slim.md).
+`make install` copies the two Slim customizations to package-managed canonical storage and links only these destinations into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`:
+
+- `oh-my-opencode-slim.jsonc`
+- `oh-my-opencode-slim/hybrid/orchestrator_append.md`
+
+It intentionally does **not** write, link, or overwrite user-owned core `opencode.json` or `opencode.jsonc`. Restart OpenCode after installation or configuration changes.
+
+The hybrid preset's orchestrator additions are kept in `global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md`. Use `orchestrator` as the OpenCode entry point.
+
+See the [Slim setup and configuration](README.md#slim-setup-and-configuration) section for installation and the configuration differences from stock Slim.
 
 ## Lifecycle
 
