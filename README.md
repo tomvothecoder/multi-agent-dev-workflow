@@ -54,9 +54,9 @@ For consequential decisions, the `architecture` council uses:
 
 Use `oracle` and `council` only for high-risk or high-judgment decisions. Agent agreement is not evidence; rely on repository checks and human approval.
 
-## Installation and setup
+## Getting Started
 
-### Install OpenCode
+### 1. Install OpenCode
 
 First, install OpenCode with its official non-interactive command:
 
@@ -66,7 +66,7 @@ curl -fsSL https://opencode.ai/install | bash
 
 More info: [https://opencode.ai/](https://opencode.ai/)
 
-### Install oh-my-opencode-slim
+### 2. Install oh-my-opencode-slim
 
 Then install `oh-my-opencode-slim` with its official non-interactive command:
 
@@ -76,7 +76,7 @@ bunx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subag
 npx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subagents=yes
 ```
 
-Then install this repository's Slim customizations:
+### 3. Install this repository's Slim customizations
 
 ```bash
 make install
@@ -90,6 +90,22 @@ make install
 ```
 
 Manually merge any needed local settings from the backup, then restart OpenCode.
+
+### 4. Configure OpenCode Providers
+
+Log in to the providers you want to use if you haven't already:
+
+```bash
+opencode auth login
+```
+
+Refresh and list the models OpenCode can see:
+
+```bash
+opencode models --refresh
+```
+
+Open your plugin config at ~/.config/opencode/oh-my-opencode-slim.json and update the models you want for each agent.
 
 ## Customized configuration of oh-my-opencode-slim
 
