@@ -1,13 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
 
-  "plugin": [
-    "oh-my-opencode-slim"
-  ],
-
   // Privacy / update preferences.
   "share": "disabled",
   "autoupdate": false,
+
+  "default_agent": "primary",
+  "subagent_depth": 1,
 
   // Only expose providers you actually intend to use.
   "enabled_providers": [
@@ -30,6 +29,18 @@
       },
 
       "models": {
+        "gpt-5.6-terra": {
+          "name": "GPT-5.6 Terra"
+        },
+
+        "gpt-5.6-luna": {
+          "name": "GPT-5.6 Luna"
+        },
+
+        "gpt-5.6-sol": {
+          "name": "GPT-5.6 Sol"
+        },
+
         "gpt-5.5": {
           "name": "GPT-5.5",
 
@@ -127,6 +138,53 @@
           }
         }
       }
+    }
+  },
+
+  "agent": {
+    "primary": {
+      "description": "Plans, implements, tests, and fixes the task end-to-end.",
+      "mode": "primary",
+      "model": "openai/gpt-5.6-terra",
+      "reasoningEffort": "medium",
+      "permission": {
+        "task": { "*": "deny", "explorer": "allow", "reviewer": "allow" },
+        "skill": { "*": "deny", "primary-workflow": "allow" }
+      },
+      "prompt": "Own the task from plan through implementation and relevant verification. Work directly by default. Ask explorer only a precise, read-only codebase question when it reduces material uncertainty. Ask reviewer once only after substantial changes and after running checks. Evaluate findings critically, fix valid ones, and rerun relevant checks. Do not use parallel edits, councils, fallback workers, or recursive delegation."
+    },
+
+    "explorer": {
+      "description": "Performs targeted, read-only codebase investigation.",
+      "mode": "subagent",
+      "model": "openai/gpt-5.6-luna",
+      "reasoningEffort": "low",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny",
+        "task": "deny",
+        "skill": { "*": "deny", "targeted-exploration": "allow" },
+        "external_directory": "deny",
+        "webfetch": "deny",
+        "websearch": "deny"
+      },
+      "prompt": "Answer only the requested repository investigation. Search and read the codebase; do not edit files, run shell commands, browse the web, plan implementation, or delegate. Return concise findings with file paths and relevant symbols."
+    },
+
+    "reviewer": {
+      "description": "Independently reviews substantial completed changes without editing them.",
+      "mode": "subagent",
+      "model": "github-copilot/claude-sonnet-5",
+      "permission": {
+        "edit": "deny",
+        "bash": { "*": "deny", "git status*": "allow", "git diff*": "allow", "git show*": "allow" },
+        "task": "deny",
+        "skill": { "*": "deny", "substantial-review": "allow" },
+        "external_directory": "deny",
+        "webfetch": "deny",
+        "websearch": "deny"
+      },
+      "prompt": "Independently review the completed implementation and provided check results. Focus on concrete correctness, regressions, edge cases, security, concurrency, error handling, API compatibility, unnecessary complexity, and missing tests. Do not modify code or delegate. Report only actionable findings, with file and line references when possible."
     }
   },
 

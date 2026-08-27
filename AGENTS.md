@@ -1,6 +1,6 @@
-# Hybrid Workflow Preferences
+# Simple Three-Agent Workflow
 
-These are global defaults for the oh-my-opencode-slim hybrid workflow. Repository-level `AGENTS.md` and repository-local skills or instructions override them.
+These are global defaults for a direct OpenCode workflow. Repository-level `AGENTS.md` and repository-local skills or instructions override them.
 
 ## Precedence
 
@@ -22,13 +22,10 @@ These are global defaults for the oh-my-opencode-slim hybrid workflow. Repositor
 - Do not expose secrets, credentials, tokens, private keys, or unapproved proprietary data.
 - Do not commit, push, open PRs, or merge unless explicitly asked.
 
-## Hybrid Workflow Preferences
+## Agent Roles
 
-- Use `orchestrator` as the primary coordinator. The standard flow is: `orchestrator -> explorer (repository discovery) -> fixer/designer or livai-senior (bounded non-overlapping work) -> relevant checks -> copilot-reviewer (when warranted) -> fixer (accepted findings) -> relevant checks -> human approval`.
-- Use `librarian` for external research. Reserve `oracle` and `council` for high-judgment or high-risk architecture, debugging, correctness, concurrency, security, or tradeoff decisions.
-- Delegate only a bounded implementation scope to `fixer`, `designer`, or `livai-senior`, including relevant tests. Do not assign concurrent workers overlapping file ownership.
-- Use `copilot-reviewer` as the independent review worker. It reviews the task, accepted plan, implementation summary, full diff, and test output without modifying code.
-- Use `livai-senior` opportunistically as a bounded implementation worker with its configured provider fallback; never make successful completion depend on it.
-- Resolve accepted findings only. Retain ambiguous, architectural, shared-core, security-sensitive, or cross-cutting work in `orchestrator` unless a bounded scope is explicit.
+- `primary` plans, implements, tests, and fixes. It handles normal work directly.
+- `explorer` is optional, read-only, and receives only a precise codebase investigation question.
+- `reviewer` is optional, read-only, and runs once after substantial changes and relevant checks.
 
-Parallelize only independent discovery or non-overlapping implementation scopes. Use repository checks and human approval as evidence; agent agreement alone is not evidence.
+Do not delegate routine work. Do not use parallel edits, councils, fallback workers, or recursive delegation. The primary agent evaluates review findings, fixes only valid findings, and reruns relevant checks. Repository checks and human approval are evidence; agent agreement is not.

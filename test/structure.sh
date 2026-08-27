@@ -2,38 +2,49 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SLIM_TEMPLATE="$ROOT/global/opencode/oh-my-opencode-slim.jsonc"
 HOST_TEMPLATE="$ROOT/global/opencode/opencode.jsonc"
-APPEND_TEMPLATE="$ROOT/global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
 
+test -x "$ROOT/global/install-opencode-config.sh"
 test -x "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
 test -x "$ROOT/profiles/nersc/uninstall-nersc-filesystem-rules.sh"
-! test -e "$ROOT/profiles/nersc/nersc-filesystem.md"
+for skill in primary-workflow targeted-exploration substantial-review; do
+  test -f "$ROOT/global/opencode/skills/$skill/SKILL.md"
+  rg -q "^name: $skill$" "$ROOT/global/opencode/skills/$skill/SKILL.md"
+done
+test ! -e "$ROOT/profiles/nersc/nersc-filesystem.md"
+test ! -e "$ROOT/global/opencode/oh-my-opencode-slim.jsonc"
+test ! -e "$ROOT/global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
+test ! -e "$ROOT/global/backup-global-agent-workflow.sh"
+test ! -e "$ROOT/global/install-global-agent-workflow.sh"
+test ! -e "$ROOT/global/uninstall-global-agent-workflow.sh"
 
-test ! -e "$ROOT/global/AGENTS.md"
-test ! -e "$ROOT/global/skills"
-test ! -e "$ROOT/global/opencode/agents"
-test ! -e "$ROOT/global/opencode/strip-jsonc.awk"
-jq --exit-status . "$SLIM_TEMPLATE" >/dev/null
-jq --exit-status '
-  .setDefaultAgent == true and .autoUpdate == false and .preset == "hybrid" and
-  .presets.hybrid.orchestrator == {"model":"openai/gpt-5.6-terra","variant":"high","skills":["*"],"mcps":["*","!context7"]} and
-  .presets.hybrid.oracle.model == "openai/gpt-5.6-sol" and
-  .presets.hybrid.librarian.mcps == ["context7", "gh_grep"] and
-  .agents["copilot-reviewer"].model == "github-copilot/claude-sonnet-5" and
-  .agents["copilot-reviewer"].permission.edit == "deny" and
-  .agents["livai-senior"].model[0] == {"id":"livai/gpt-5.5","variant":"high"} and
-  .council.presets.architecture.senior.model[1] == {"id":"openai/gpt-5.6-terra","variant":"high"}
-' "$SLIM_TEMPLATE" >/dev/null
-
-rg -q '^# Hybrid Workflow Preferences$' "$APPEND_TEMPLATE"
-rg -q 'Use the smallest effective execution graph\.' "$APPEND_TEMPLATE"
-rg -q 'Never make successful completion depend on `livai-senior`\.' "$APPEND_TEMPLATE"
-
-# The core host config retains host policy but Slim, not native configuration, owns agents.
-rg -q '"plugin"' "$HOST_TEMPLATE"
-rg -q '"provider"' "$HOST_TEMPLATE"
-rg -q '"permission"' "$HOST_TEMPLATE"
-! rg -q 'workflow-(orchestrator|reviewer)|"default_agent"|"subagent_depth"|"agent"' "$HOST_TEMPLATE"
+# The template is JSONC; all comments occupy their own lines.
+sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
+  .plugin == null and
+  .default_agent == "primary" and
+  .subagent_depth == 1 and
+  .enabled_providers == ["openai", "github-copilot", "livai"] and
+  .provider.livai.models["gpt-5.6-terra"].name == "GPT-5.6 Terra" and
+  .provider.livai.models["gpt-5.6-luna"].name == "GPT-5.6 Luna" and
+  .provider.livai.models["gpt-5.6-sol"].name == "GPT-5.6 Sol" and
+  (.provider.livai.models | has("gpt-5.6") | not) and
+  .agent.primary.model == "openai/gpt-5.6-terra" and
+  .agent.primary.mode == "primary" and
+  .agent.primary.reasoningEffort == "medium" and
+  .agent.primary.permission.task == {"*":"deny","explorer":"allow","reviewer":"allow"} and
+  .agent.primary.permission.skill == {"*":"deny","primary-workflow":"allow"} and
+  .agent.explorer.mode == "subagent" and
+  .agent.explorer.model == "openai/gpt-5.6-luna" and
+  .agent.explorer.reasoningEffort == "low" and
+  .agent.explorer.permission.edit == "deny" and
+  .agent.explorer.permission.task == "deny" and
+  .agent.explorer.permission.skill == {"*":"deny","targeted-exploration":"allow"} and
+  .agent.reviewer.mode == "subagent" and
+  .agent.reviewer.model == "github-copilot/claude-sonnet-5" and
+  .agent.reviewer.permission.edit == "deny" and
+  .agent.reviewer.permission.task == "deny" and
+  .agent.reviewer.permission.skill == {"*":"deny","substantial-review":"allow"} and
+  .agent.reviewer.permission.bash["git diff*"] == "allow"
+' >/dev/null
 
 printf 'Structure test passed.\n'

@@ -1,30 +1,21 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help backup install install-opencode install-opencode-config install-nersc-rules uninstall uninstall-opencode uninstall-nersc-rules test structure-test
+.PHONY: help install install-opencode install-opencode-config install-nersc-rules uninstall-nersc-rules test structure-test
 
 help:
-	@printf '%s\n' 'Targets:' '  backup                   Back up the legacy Slim JSON configuration' '  install                  Install package-managed Slim workflow links' '  install-opencode         Alias for install' '  install-opencode-config  Optionally initialize user-owned OpenCode config' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall                Remove package-managed Slim workflow links' '  uninstall-opencode       Alias for uninstall' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  test                     Run lifecycle and structure checks' '  structure-test           Validate Slim templates and host configuration'
-
-backup:
-	@./global/backup-global-agent-workflow.sh
+	@printf '%s\n' 'Targets:' '  install                  Initialize the user-owned OpenCode config when absent' '  install-opencode         Alias for install' '  install-opencode-config  Alias for install' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  test                     Run lifecycle and structure checks' '  structure-test           Validate the OpenCode template'
 
 install:
-	@./global/install-global-agent-workflow.sh
+	@./global/install-opencode-config.sh
 
 install-opencode:
-	@./global/install-global-agent-workflow.sh opencode
+	@./global/install-opencode-config.sh
 
 install-opencode-config:
 	@./global/install-opencode-config.sh
 
 install-nersc-rules:
 	@./profiles/nersc/install-nersc-filesystem-rules.sh
-
-uninstall:
-	@./global/uninstall-global-agent-workflow.sh
-
-uninstall-opencode:
-	@./global/uninstall-global-agent-workflow.sh opencode
 
 uninstall-nersc-rules:
 	@./profiles/nersc/uninstall-nersc-filesystem-rules.sh

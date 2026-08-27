@@ -1,171 +1,102 @@
-# Multi-Agent Orchestration with OpenCode
+# Simple OpenCode Three-Agent Workflow
 
-This repository provides `oh-my-opencode-slim` hybrid customizations for an OpenCode-based multi-agent workflow that I use for bounded, parallelizable software engineering work. It uses specialized agents for discovery, research, implementation, review, and human approval.
+This repository provides a small, native OpenCode configuration for software development.
 
-My setup is:
+## Workflow
 
-- GPT Plus Plan ($20/mo) - for planning, coordination, and high-risk architecture
-- GitHub Copilot Enterprise - for code review
-- LivAI API (LLNL-only) - for bounded implementation work when LLNL network access is available
-
-## Contents
-
-- [Why?](#why)
-- [Agent workflow](#agent-workflow)
-- [Installation and setup](#installation-and-setup)
-- [Customized configuration of oh-my-opencode-slim](#customized-configuration-of-oh-my-opencode-slim)
-- [Quickstart](#quickstart)
-- [Further documentation](#further-documentation)
-- [Repository layout](#repository-layout)
-
-## Why?
-
-OpenCode and oh-my-opencode-slim provide an open-source, flexible foundation for coordinating specialized coding agents. The setup is not tied to a single provider: it can use OpenAI, GitHub Copilot, LivAI, and other configured models.
-
-OpenCode provides the runtime and keeps the core configuration under your control. Slim adds agent presets, specialized roles, and controlled delegation for discovery, implementation, review, automated checks, and human approval.
-
-For LLNL users, the workflow can use LivAI as a fallback for bounded implementation work when access to LLNL network is available.
-
-## Agent Workflow
-
-This workflow uses the 7 specialized agents from [oh-my-opencode-slim’s Pantheon](https://github.com/alvinunreal/oh-my-opencode-slim#%EF%B8%8F-meet-the-pantheon), plus custom review and fallback workers.
-
-The configuration assigns lower-cost models to focused discovery and research, uses stronger reasoning for coordination and architecture, and keeps implementation work bounded and parallelizable. Independent review, repository checks, and human approval provide safeguards for meaningful changes.
-
-| Workflow stage          | Agent              | Purpose                                                           | Provider / model                                      | Reasoning level       |
-| ----------------------- | ------------------ | ----------------------------------------------------------------- | ----------------------------------------------------- | --------------------- |
-| Coordinate              | `orchestrator`     | Plans work, delegates, and coordinates checks and approval.       | OpenAI / GPT-5.6 Terra                                | High                  |
-| Discover                | `explorer`         | Investigates unfamiliar repository areas.                         | OpenAI / GPT-5.6 Luna                                 | Low                   |
-| Research                | `librarian`        | Researches external documentation and examples.                   | OpenAI / GPT-5.6 Luna                                 | Low                   |
-| Implement               | `fixer`            | Handles bounded implementation work and accepted review findings. | OpenAI / GPT-5.6 Terra                                | Medium                |
-| Design                  | `designer`         | Handles UI/UX implementation and polish.                          | OpenAI / GPT-5.6 Terra                                | Medium                |
-| Parallel implementation | `livai-senior`     | Handles substantial, independent implementation work.             | LivAI / GPT-5.5; falls back to OpenAI / GPT-5.6 Terra | High; fallback Medium |
-| Review                  | `copilot-reviewer` | Independently reviews meaningful changes.                         | GitHub Copilot / Claude Sonnet 5                      | Provider default      |
-| Architecture            | `oracle`           | Advises on high-risk architecture, debugging, and tradeoffs.      | OpenAI / GPT-5.6 Sol                                  | High                  |
-| Consensus               | `council`          | Synthesizes opinions for consequential decisions.                 | OpenAI / GPT-5.6 Terra                                | High                  |
-
-For consequential decisions, the `architecture` council uses:
-
-| Seat     | Provider / model                                      | Reasoning level  |
-| -------- | ----------------------------------------------------- | ---------------- |
-| `codex`  | OpenAI / GPT-5.6 Sol                                  | High             |
-| `claude` | GitHub Copilot / Claude Sonnet 5                      | Provider default |
-| `senior` | LivAI / GPT-5.5; falls back to OpenAI / GPT-5.6 Terra | High             |
-
-Use `oracle` and `council` only for high-risk or high-judgment decisions. Agent agreement is not evidence; rely on repository checks and human approval.
-
-## Getting Started
-
-### 1. Install OpenCode
-
-First, install OpenCode with its official non-interactive command:
-
-```bash
-curl -fsSL https://opencode.ai/install | bash
+```mermaid
+flowchart LR
+    A[primary: plan, implement, test] --> B[relevant checks]
+    B --> C{Substantial change?}
+    C -- no --> F[human approval]
+    C -- yes --> D[reviewer: one read-only pass]
+    D --> E[primary: accepted fixes and checks]
+    E --> F
 ```
 
-More info: [https://opencode.ai/](https://opencode.ai/)
+`explorer` is optional. The primary agent invokes it only for a precise, read-only codebase investigation that will materially reduce uncertainty. It never edits files.
 
-### 2. Install oh-my-opencode-slim
+## Agents
 
-Then install `oh-my-opencode-slim` with its official non-interactive command:
+| Agent      | Model                            | Role                                                                                      | Permissions                                                                              |
+| ---------- | -------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `primary`  | `openai/gpt-5.6-terra`, medium   | Plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only Explorer or Reviewer.                           |
+| `explorer` | `openai/gpt-5.6-luna`, low       | Targeted repository investigation.                                                        | Read/search only; no shell, edits, skills, web access, or delegation.                    |
+| `reviewer` | `github-copilot/claude-sonnet-5` | One independent review after substantial changes.                                         | Read-only; may inspect `git status`, `git diff`, and `git show`; no edits or delegation. |
 
-```bash
-bunx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subagents=yes
-# Fallback when Bun is unavailable:
-npx oh-my-opencode-slim@latest install --no-tui --skills=yes --background-subagents=yes
-```
+If GitHub Copilot is unavailable, configure the `reviewer` model as `openai/gpt-5.6-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
 
-### 3. Install this repository's Slim customizations
+Each role has one focused skill, installed globally by `make install`:
 
-```bash
-make install
-```
+- `primary-workflow`: direct plan → implement → verify workflow.
+- `targeted-exploration`: concise read-only codebase investigation.
+- `substantial-review`: one read-only review pass.
 
-To optionally initialize the separate, user-owned core OpenCode configuration from this repository's template, run:
+The native configuration makes each skill visible only to its matching agent. Shared engineering rules live in [AGENTS.md](AGENTS.md).
 
-```bash
-make install-opencode-config
-```
+## Providers
 
-This command only copies the template when `opencode.jsonc` is absent; it never replaces an existing configuration.
+The OpenCode template enables these providers:
 
-If a previous Slim installation created `~/.config/opencode/oh-my-opencode-slim.json`, the installer preserves it rather than overwriting it. Back it up before installing this repository's managed `.jsonc` configuration:
+- OpenAI, for Primary, Explorer, and the optional GPT-5.6 Sol reviewer.
+- GitHub Copilot, for the preferred Claude Sonnet 5 reviewer.
+- LivAI, as an optional provider. Its custom endpoint includes `livai/gpt-5.6-terra`, `livai/gpt-5.6-luna`, `livai/gpt-5.6-sol`, `livai/gpt-5.5`, `livai/gpt-5.4`, `livai/gpt-5-mini`, `livai/gpt-5-nano`, and `livai/claude-sonnet-4.5`. LivAI is intentionally not an automatic fallback.
 
-```bash
-make backup
-make install
-```
-
-Manually merge any needed local settings from the backup, then restart OpenCode.
-
-### 4. Configure OpenCode Providers
-
-Log in to the providers you want to use if you haven't already:
+Authenticate the providers you intend to use, then refresh the model list:
 
 ```bash
 opencode auth login
-```
-
-Refresh and list the models OpenCode can see:
-
-```bash
 opencode models --refresh
 ```
 
-Open your plugin config at ~/.config/opencode/oh-my-opencode-slim.json and update the models you want for each agent.
+Confirm the exact IDs exposed to your account before changing model assignments. For LivAI, set the API key in your user-owned configuration; never commit it.
 
-### 5. Launch OpenCode and start working!
+## Setup
 
-```bash
-opencode
-```
+1. Install OpenCode using its [official instructions](https://opencode.ai/).
+2. Initialize the user-owned configuration only if it does not already exist:
 
-## Customized configuration of oh-my-opencode-slim
+   ```bash
+   make install
+   ```
 
-The following table summarizes the differences from stock Slim.
+   This copies `global/opencode/opencode.jsonc` and the three skills to `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It never replaces an existing configuration or same-named skill.
 
-### Hybrid customizations
+3. Authenticate the providers above and start OpenCode.
 
-| Area                        | Difference from stock Slim                                                                                                                                                |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hybrid routing              | Sets the `hybrid` preset and configures model, variant, skill, and MCP routing for `orchestrator`, `oracle`, `librarian`, `explorer`, `designer`, `fixer`, and `council`. |
-| Review and fallback workers | Adds the read-only `copilot-reviewer` and the `livai-senior` implementation worker with its configured model fallback.                                                    |
-| Architecture council        | Defines the `architecture` council seating for Codex, Claude, and senior-engineering perspectives.                                                                        |
-| Hybrid append policy        | Adds hybrid-specific orchestration, parallel-work, testing, review, and council guidance from `hybrid/orchestrator_append.md`.                                            |
-| Safety and verification     | Keeps core host configuration user-owned; the append policy requires relevant repository checks and avoids overlapping concurrent edits.                                  |
+Existing user-owned configuration remains yours. Merge the three-agent section deliberately rather than overwriting it.
 
-### Configuration boundary
-
-The core OpenCode configuration remains user-owned; its separate host template is `global/opencode/opencode.jsonc`. The Slim plugin configuration, including the hybrid preset, is `global/opencode/oh-my-opencode-slim.jsonc`, and the hybrid orchestrator append is `global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md`.
-
-`make install` links only `oh-my-opencode-slim.jsonc` and `oh-my-opencode-slim/hybrid/orchestrator_append.md` into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It never writes, links, or overwrites user-owned core `opencode.json` or `opencode.jsonc`. Restart OpenCode after installation or configuration changes. See [OpenCode configuration](docs/opencode.md) for the separate core configuration reference.
-
-### NERSC filesystem rules
-
-For NERSC environments, run:
+## Optional NERSC filesystem rules
 
 ```bash
 make install-nersc-rules
-```
-
-This installs bounded-filesystem-discovery rules for OpenCode, GitHub Copilot, Codex, and Claude Code. The profile manages its canonical copy at `~/.config/ai-instructions/nersc-filesystem.md`, preserves existing instruction-file content, and can be removed with:
-
-```bash
 make uninstall-nersc-rules
 ```
 
-## Quickstart
+This profile is independent of the agent configuration.
 
-See the [Quickstart](QUICKSTART.md) for more workflow details, including the default flow, hybrid workflow preferences, and lifecycle commands.
+## Removing oh-my-opencode-slim
 
-## Further documentation
+After the native configuration works, remove Slim from your active OpenCode configuration directory:
 
-See the [official installation guide](https://github.com/alvinunreal/oh-my-opencode-slim/blob/master/docs/installation.md) for Slim setup details and the [official Slim configuration documentation](https://github.com/alvinunreal/oh-my-opencode-slim/blob/master/docs/configuration.md) for plugin configuration details.
+1. Back up user-owned Slim files. Run the previous repository version's `make uninstall` first if it installed managed Slim links.
+2. Remove `"oh-my-opencode-slim"` from the `plugin` array in `opencode.json` or `opencode.jsonc`.
+3. Restore built-in `general` and `explore` agents if Slim disabled them; remove a Slim-added `lsp` setting only when it was not pre-existing.
+4. Remove the Slim entry from `tui.json` and remove `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS` from your shell startup file if Slim added it.
+5. After checking ownership, remove its configuration files, managed skills, cache, and optional companion binary. Restart OpenCode and confirm Slim agents no longer appear with `opencode auth status`.
+
+The [official Slim uninstallation guide](https://github.com/alvinunreal/oh-my-opencode-slim/blob/master/docs/installation.md#uninstallation) lists the current paths and cleanup details.
+
+## Verification
+
+```bash
+make test
+```
 
 ## Repository layout
 
-- `global/`: package-managed Slim customizations and the separate core OpenCode template.
-- `profiles/`: optional environment profiles.
-- `docs/`: focused setup documentation.
-- `test/`: lifecycle and structure checks.
+- `global/opencode/opencode.jsonc`: user-owned native OpenCode template.
+- `global/opencode/skills/`: the three focused OpenCode skills.
+- `global/install-opencode-config.sh`: safe one-time config initializer.
+- `profiles/nersc/`: optional filesystem instruction profile.
+- `test/`: configuration and lifecycle checks.

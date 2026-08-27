@@ -2,121 +2,47 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TEST_HOME="$(mktemp -d)"
-trap 'rm -rf "$TEST_HOME"' EXIT
-CONFIG_DIR="$TEST_HOME/custom-opencode"
-CANONICAL_ROOT="$TEST_HOME/.config/agent-workflow"
-CONFIG_LINK="$CONFIG_DIR/oh-my-opencode-slim.jsonc"
-APPEND_LINK="$CONFIG_DIR/oh-my-opencode-slim/hybrid/orchestrator_append.md"
 
-if HOME="$TEST_HOME" "$ROOT/global/install-global-agent-workflow.sh" codex >"$TEST_HOME/install-error" 2>&1; then exit 1; fi
-rg -q '^Usage:' "$TEST_HOME/install-error"
-if HOME="$TEST_HOME" "$ROOT/global/uninstall-global-agent-workflow.sh" codex >"$TEST_HOME/uninstall-error" 2>&1; then exit 1; fi
-rg -q '^Usage:' "$TEST_HOME/uninstall-error"
-
-# Core OpenCode configuration is an opt-in, user-owned template copy.
+# The user-owned core configuration is initialized only when absent.
 CORE_CONFIG_HOME="$(mktemp -d)"
+trap 'rm -rf "$CORE_CONFIG_HOME"' EXIT
 CORE_CONFIG_DIR="$CORE_CONFIG_HOME/custom-opencode"
 CORE_CONFIG="$CORE_CONFIG_DIR/opencode.jsonc"
-HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install-opencode-config
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install
 test -f "$CORE_CONFIG"
 test ! -L "$CORE_CONFIG"
 cmp -s "$ROOT/global/opencode/opencode.jsonc" "$CORE_CONFIG"
-rm -rf "$CORE_CONFIG_HOME"
-
-# Existing user-owned core configuration is not replaced.
-EXISTING_CORE_HOME="$(mktemp -d)"
-EXISTING_CORE_DIR="$EXISTING_CORE_HOME/custom-opencode"
-EXISTING_CORE_CONFIG="$EXISTING_CORE_DIR/opencode.jsonc"
-mkdir -p "$EXISTING_CORE_DIR"
-printf 'user-owned core config\n' > "$EXISTING_CORE_CONFIG"
-if HOME="$EXISTING_CORE_HOME" OPENCODE_CONFIG_DIR="$EXISTING_CORE_DIR" make -C "$ROOT" install-opencode-config >"$EXISTING_CORE_HOME/core-config-error" 2>&1; then exit 1; fi
-rg -q 'Refusing to replace existing user-owned OpenCode configuration:' "$EXISTING_CORE_HOME/core-config-error"
-test "$(<"$EXISTING_CORE_CONFIG")" = 'user-owned core config'
-rm -rf "$EXISTING_CORE_HOME"
-
-# A non-directory configuration path is rejected before any directory creation.
-NON_DIRECTORY_CORE_HOME="$(mktemp -d)"
-NON_DIRECTORY_CORE_DIR="$NON_DIRECTORY_CORE_HOME/custom-opencode"
-printf 'not a directory\n' > "$NON_DIRECTORY_CORE_DIR"
-if HOME="$NON_DIRECTORY_CORE_HOME" OPENCODE_CONFIG_DIR="$NON_DIRECTORY_CORE_DIR" make -C "$ROOT" install-opencode-config >"$NON_DIRECTORY_CORE_HOME/core-config-error" 2>&1; then exit 1; fi
-rg -q 'Refusing to use non-directory OpenCode configuration directory:' "$NON_DIRECTORY_CORE_HOME/core-config-error"
-test "$(<"$NON_DIRECTORY_CORE_DIR")" = 'not a directory'
-test ! -e "$NON_DIRECTORY_CORE_HOME/.config"
-rm -rf "$NON_DIRECTORY_CORE_HOME"
-
-# Legacy Slim configurations are moved to a non-overwriting backup path.
-BACKUP_HOME="$(mktemp -d)"
-BACKUP_CONFIG="$BACKUP_HOME/custom-opencode"
-BACKUP_SOURCE="$BACKUP_CONFIG/oh-my-opencode-slim.json"
-BACKUP_TARGET="$BACKUP_SOURCE.backup"
-mkdir -p "$BACKUP_CONFIG"
-printf 'legacy Slim config\n' > "$BACKUP_HOME/legacy-config"
-ln -s "$BACKUP_HOME/legacy-config" "$BACKUP_SOURCE"
-HOME="$BACKUP_HOME" OPENCODE_CONFIG_DIR="$BACKUP_CONFIG" make -C "$ROOT" backup
-test ! -e "$BACKUP_SOURCE" && test ! -L "$BACKUP_SOURCE"
-test -L "$BACKUP_TARGET"
-test "$(readlink "$BACKUP_TARGET")" = "$BACKUP_HOME/legacy-config"
-rm -rf "$BACKUP_HOME"
-
-# Backup fails clearly when no legacy Slim configuration exists.
-MISSING_BACKUP_HOME="$(mktemp -d)"
-if HOME="$MISSING_BACKUP_HOME" OPENCODE_CONFIG_DIR="$MISSING_BACKUP_HOME/custom-opencode" make -C "$ROOT" backup >"$MISSING_BACKUP_HOME/backup-error" 2>&1; then exit 1; fi
-rg -q 'Legacy Slim configuration does not exist:' "$MISSING_BACKUP_HOME/backup-error"
-rm -rf "$MISSING_BACKUP_HOME"
-
-# Backup never overwrites an existing backup.
-EXISTING_BACKUP_HOME="$(mktemp -d)"
-EXISTING_BACKUP_CONFIG="$EXISTING_BACKUP_HOME/custom-opencode"
-mkdir -p "$EXISTING_BACKUP_CONFIG"
-printf 'legacy Slim config\n' > "$EXISTING_BACKUP_CONFIG/oh-my-opencode-slim.json"
-printf 'existing backup\n' > "$EXISTING_BACKUP_CONFIG/oh-my-opencode-slim.json.backup"
-if HOME="$EXISTING_BACKUP_HOME" OPENCODE_CONFIG_DIR="$EXISTING_BACKUP_CONFIG" make -C "$ROOT" backup >"$EXISTING_BACKUP_HOME/backup-error" 2>&1; then exit 1; fi
-rg -q 'Refusing to overwrite existing legacy Slim configuration backup:' "$EXISTING_BACKUP_HOME/backup-error"
-test "$(<"$EXISTING_BACKUP_CONFIG/oh-my-opencode-slim.json")" = 'legacy Slim config'
-test "$(<"$EXISTING_BACKUP_CONFIG/oh-my-opencode-slim.json.backup")" = 'existing backup'
-rm -rf "$EXISTING_BACKUP_HOME"
-
-# The configured destination, rather than HOME's default, owns the two links.
-HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/install-global-agent-workflow.sh"
-HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/install-global-agent-workflow.sh"
-test -L "$CONFIG_LINK"
-test -L "$APPEND_LINK"
-test "$(readlink "$CONFIG_LINK")" = "$CANONICAL_ROOT/opencode/oh-my-opencode-slim.jsonc"
-test "$(readlink "$APPEND_LINK")" = "$CANONICAL_ROOT/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
-test -f "$CANONICAL_ROOT/opencode/oh-my-opencode-slim.jsonc"
-test -f "$CANONICAL_ROOT/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
-test ! -e "$CONFIG_DIR/opencode.jsonc"
-test ! -e "$CONFIG_DIR/opencode.json"
-
-# Every destination conflict is rejected before installation mutates canonical storage.
-for conflict in "$CONFIG_DIR/oh-my-opencode-slim.json" "$CONFIG_DIR/oh-my-opencode-slim.jsonc" "$CONFIG_DIR/oh-my-opencode-slim/hybrid/orchestrator_append.md"; do
-  CONFLICT_HOME="$(mktemp -d)"
-  CONFLICT_CONFIG="$CONFLICT_HOME/opencode"
-  relative="${conflict#"$CONFIG_DIR"}"
-  mkdir -p "$(dirname "$CONFLICT_CONFIG$relative")"
-  printf 'user managed\n' > "$CONFLICT_CONFIG$relative"
-  if HOME="$CONFLICT_HOME" OPENCODE_CONFIG_DIR="$CONFLICT_CONFIG" "$ROOT/global/install-global-agent-workflow.sh" >"$CONFLICT_HOME/error" 2>&1; then exit 1; fi
-  rg -q 'Refusing to replace unmanaged path' "$CONFLICT_HOME/error"
-  test ! -e "$CONFLICT_HOME/.config/agent-workflow"
-  rm -rf "$CONFLICT_HOME"
+for skill in primary-workflow targeted-exploration substantial-review; do
+  test -f "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
+  cmp -s "$ROOT/global/opencode/skills/$skill/SKILL.md" "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
 done
 
-# Uninstall removes only links and canonical artifacts it owns.
-HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/uninstall-global-agent-workflow.sh"
-HOME="$TEST_HOME" OPENCODE_CONFIG_DIR="$CONFIG_DIR" "$ROOT/global/uninstall-global-agent-workflow.sh"
-test ! -e "$CONFIG_LINK"
-test ! -e "$APPEND_LINK"
-test ! -e "$CANONICAL_ROOT"
+# Existing user-owned configuration is never replaced.
+if HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/config-error" 2>&1; then exit 1; fi
+rg -q 'Refusing to replace existing user-owned OpenCode configuration:' "$CORE_CONFIG_HOME/config-error"
+cmp -s "$ROOT/global/opencode/opencode.jsonc" "$CORE_CONFIG"
 
-UNMANAGED_HOME="$(mktemp -d)"
-mkdir -p "$UNMANAGED_HOME/.config/opencode"
-printf 'user Slim config\n' > "$UNMANAGED_HOME/.config/opencode/oh-my-opencode-slim.jsonc"
-HOME="$UNMANAGED_HOME" "$ROOT/global/uninstall-global-agent-workflow.sh" >"$UNMANAGED_HOME/uninstall-output" 2>&1
-test -f "$UNMANAGED_HOME/.config/opencode/oh-my-opencode-slim.jsonc"
-rm -rf "$UNMANAGED_HOME"
+# Existing same-named skills are never replaced, and no configuration is created.
+SKILL_CONFLICT_HOME="$(mktemp -d)"
+SKILL_CONFLICT_DIR="$SKILL_CONFLICT_HOME/custom-opencode"
+mkdir -p "$SKILL_CONFLICT_DIR/skills/primary-workflow"
+printf 'user-owned skill\n' > "$SKILL_CONFLICT_DIR/skills/primary-workflow/SKILL.md"
+if HOME="$SKILL_CONFLICT_HOME" OPENCODE_CONFIG_DIR="$SKILL_CONFLICT_DIR" make -C "$ROOT" install >"$SKILL_CONFLICT_HOME/skill-error" 2>&1; then exit 1; fi
+rg -q 'Refusing to replace existing user-owned OpenCode skill:' "$SKILL_CONFLICT_HOME/skill-error"
+test ! -e "$SKILL_CONFLICT_DIR/opencode.jsonc"
+test "$(<"$SKILL_CONFLICT_DIR/skills/primary-workflow/SKILL.md")" = 'user-owned skill'
+rm -rf "$SKILL_CONFLICT_HOME"
 
-# NERSC rules append bounded blocks to every supported instruction target.
+# A non-directory configuration path is rejected before creating directories.
+NON_DIRECTORY_HOME="$(mktemp -d)"
+NON_DIRECTORY_CONFIG="$NON_DIRECTORY_HOME/custom-opencode"
+printf 'not a directory\n' > "$NON_DIRECTORY_CONFIG"
+if HOME="$NON_DIRECTORY_HOME" OPENCODE_CONFIG_DIR="$NON_DIRECTORY_CONFIG" make -C "$ROOT" install >"$NON_DIRECTORY_HOME/config-error" 2>&1; then exit 1; fi
+rg -q 'Refusing to use non-directory OpenCode configuration directory:' "$NON_DIRECTORY_HOME/config-error"
+test "$(<"$NON_DIRECTORY_CONFIG")" = 'not a directory'
+rm -rf "$NON_DIRECTORY_HOME"
+
+# NERSC rules remain independent of the agent configuration and are idempotent.
 NERSC_HOME="$(mktemp -d)"
 for file in \
   "$NERSC_HOME/.codex/AGENTS.md" \
