@@ -21,18 +21,17 @@ flowchart LR
 | Agent      | Model                            | Role                                                                                      | Permissions                                                                              |
 | ---------- | -------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `primary`  | `openai/gpt-5.6-terra`, medium   | Plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only Explorer or Reviewer.                           |
-| `explorer` | `openai/gpt-5.6-luna`, low       | Targeted repository investigation.                                                        | Read/search only; no shell, edits, skills, web access, or delegation.                    |
+| `explorer` | `openai/gpt-5.6-luna`, low       | Targeted repository investigation.                                                        | Read/search only; no shell, edits, web access, or delegation.                             |
 | `reviewer` | `github-copilot/claude-sonnet-5` | One independent review after substantial changes.                                         | Read-only; may inspect `git status`, `git diff`, and `git show`; no edits or delegation. |
 
 If GitHub Copilot is unavailable, configure the `reviewer` model as `openai/gpt-5.6-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
 
-Each role has one focused skill, installed globally by `make install`:
+Explorer and Reviewer each have one focused skill, installed globally by `make install`:
 
-- `primary-workflow`: direct plan → implement → verify workflow.
-- `targeted-exploration`: concise read-only codebase investigation.
-- `substantial-review`: one read-only review pass.
+- `explore`: concise read-only codebase investigation.
+- `review`: one read-only review pass.
 
-The native configuration makes each skill visible only to its matching agent. Shared engineering rules live in [AGENTS.md](AGENTS.md).
+Primary uses its always-on prompt and has no skill access. Each remaining skill is visible only to its matching agent. Shared engineering rules live in [AGENTS.md](AGENTS.md).
 
 ## Providers
 
@@ -60,11 +59,15 @@ Confirm the exact IDs exposed to your account before changing model assignments.
    make install
    ```
 
-   This copies `global/opencode/opencode.jsonc` and the three skills to `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It never replaces an existing configuration or same-named skill.
+   This copies `global/opencode/opencode.jsonc` and the two skills to `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It never replaces an existing configuration or same-named skill.
 
 3. Authenticate the providers above and start OpenCode.
 
-Existing user-owned configuration remains yours. Merge the three-agent section deliberately rather than overwriting it.
+Existing user-owned configuration remains yours. Merge the three-agent section deliberately rather than overwriting it, then install any missing skills without changing your config:
+
+```bash
+make install-skills
+```
 
 ## Optional NERSC filesystem rules
 
@@ -96,7 +99,7 @@ make test
 ## Repository layout
 
 - `global/opencode/opencode.jsonc`: user-owned native OpenCode template.
-- `global/opencode/skills/`: the three focused OpenCode skills.
+- `global/opencode/skills/`: the two focused OpenCode skills.
 - `global/install-opencode-config.sh`: safe one-time config initializer.
 - `profiles/nersc/`: optional filesystem instruction profile.
 - `test/`: configuration and lifecycle checks.

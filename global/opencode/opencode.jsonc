@@ -149,7 +149,7 @@
       "reasoningEffort": "medium",
       "permission": {
         "task": { "*": "deny", "explorer": "allow", "reviewer": "allow" },
-        "skill": { "*": "deny", "primary-workflow": "allow" }
+        "skill": "deny"
       },
       "prompt": "Own the task from plan through implementation and relevant verification. Work directly by default. Ask explorer only a precise, read-only codebase question when it reduces material uncertainty. Ask reviewer once only after substantial changes and after running checks. Evaluate findings critically, fix valid ones, and rerun relevant checks. Do not use parallel edits, councils, fallback workers, or recursive delegation."
     },
@@ -163,7 +163,7 @@
         "edit": "deny",
         "bash": "deny",
         "task": "deny",
-        "skill": { "*": "deny", "targeted-exploration": "allow" },
+        "skill": { "*": "deny", "explore": "allow" },
         "external_directory": "deny",
         "webfetch": "deny",
         "websearch": "deny"
@@ -179,7 +179,7 @@
         "edit": "deny",
         "bash": { "*": "deny", "git status*": "allow", "git diff*": "allow", "git show*": "allow" },
         "task": "deny",
-        "skill": { "*": "deny", "substantial-review": "allow" },
+        "skill": { "*": "deny", "review": "allow" },
         "external_directory": "deny",
         "webfetch": "deny",
         "websearch": "deny"

@@ -12,7 +12,7 @@ HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" 
 test -f "$CORE_CONFIG"
 test ! -L "$CORE_CONFIG"
 cmp -s "$ROOT/global/opencode/opencode.jsonc" "$CORE_CONFIG"
-for skill in primary-workflow targeted-exploration substantial-review; do
+for skill in explore review; do
   test -f "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
   cmp -s "$ROOT/global/opencode/skills/$skill/SKILL.md" "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
 done
@@ -21,16 +21,20 @@ done
 if HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/config-error" 2>&1; then exit 1; fi
 rg -q 'Refusing to replace existing user-owned OpenCode configuration:' "$CORE_CONFIG_HOME/config-error"
 cmp -s "$ROOT/global/opencode/opencode.jsonc" "$CORE_CONFIG"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install-skills >"$CORE_CONFIG_HOME/skills-output"
+rg -q 'All workflow skills are already present in:' "$CORE_CONFIG_HOME/skills-output"
 
-# Existing same-named skills are never replaced, and no configuration is created.
+# Existing same-named skills are preserved while missing skills are installed.
 SKILL_CONFLICT_HOME="$(mktemp -d)"
 SKILL_CONFLICT_DIR="$SKILL_CONFLICT_HOME/custom-opencode"
-mkdir -p "$SKILL_CONFLICT_DIR/skills/primary-workflow"
-printf 'user-owned skill\n' > "$SKILL_CONFLICT_DIR/skills/primary-workflow/SKILL.md"
-if HOME="$SKILL_CONFLICT_HOME" OPENCODE_CONFIG_DIR="$SKILL_CONFLICT_DIR" make -C "$ROOT" install >"$SKILL_CONFLICT_HOME/skill-error" 2>&1; then exit 1; fi
-rg -q 'Refusing to replace existing user-owned OpenCode skill:' "$SKILL_CONFLICT_HOME/skill-error"
+mkdir -p "$SKILL_CONFLICT_DIR/skills/explore"
+printf 'user-owned skill\n' > "$SKILL_CONFLICT_DIR/skills/explore/SKILL.md"
+HOME="$SKILL_CONFLICT_HOME" OPENCODE_CONFIG_DIR="$SKILL_CONFLICT_DIR" make -C "$ROOT" install-skills >"$SKILL_CONFLICT_HOME/skills-output"
+rg -q 'Preserved existing OpenCode skill:' "$SKILL_CONFLICT_HOME/skills-output"
+rg -q 'Installed workflow skills in:' "$SKILL_CONFLICT_HOME/skills-output"
 test ! -e "$SKILL_CONFLICT_DIR/opencode.jsonc"
-test "$(<"$SKILL_CONFLICT_DIR/skills/primary-workflow/SKILL.md")" = 'user-owned skill'
+test "$(<"$SKILL_CONFLICT_DIR/skills/explore/SKILL.md")" = 'user-owned skill'
+cmp -s "$ROOT/global/opencode/skills/review/SKILL.md" "$SKILL_CONFLICT_DIR/skills/review/SKILL.md"
 rm -rf "$SKILL_CONFLICT_HOME"
 
 # A non-directory configuration path is rejected before creating directories.
