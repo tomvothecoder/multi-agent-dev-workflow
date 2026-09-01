@@ -6,25 +6,25 @@ This repository provides a small, native OpenCode configuration for software dev
 
 ```mermaid
 flowchart LR
-    A[primary: plan, implement, test] --> B[relevant checks]
+    A[livai-primary: plan, implement, test] --> B[relevant checks]
     B --> C{Substantial change?}
     C -- no --> F[human approval]
     C -- yes --> D[reviewer: one read-only pass]
-    D --> E[primary: accepted fixes and checks]
+    D --> E[livai-primary: accepted fixes and checks]
     E --> F
 ```
 
-`explorer` is optional. The primary agent invokes it only for a precise, read-only codebase investigation that will materially reduce uncertainty. It never edits files.
+`livai-explorer` is optional. `livai-primary` invokes it only for a precise, read-only codebase investigation that will materially reduce uncertainty. It never edits files.
 
 ## Agents
 
 | Agent      | Model                            | Role                                                                                      | Permissions                                                                              |
 | ---------- | -------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `primary`  | `openai/gpt-5.6-terra`, medium   | Plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only Explorer or Reviewer.                           |
-| `explorer` | `openai/gpt-5.6-luna`, low       | Targeted repository investigation.                                                        | Read/search only; no shell, edits, web access, or delegation.                             |
+| `livai-primary`  | `livai/gpt-5.6-terra`, medium   | Default primary: plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only LivAI Explorer or Reviewer. |
+| `livai-explorer` | `livai/gpt-5.6-luna`, low       | Targeted repository investigation for LivAI Primary.                                      | Read/search only; no shell, edits, web access, or delegation.       |
 | `reviewer` | `github-copilot/claude-sonnet-5` | One independent review after substantial changes.                                         | Read-only; may inspect `git status`, `git diff`, and `git show`; no edits or delegation. |
 
-If GitHub Copilot is unavailable, configure the `reviewer` model as `openai/gpt-5.6-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
+The existing `primary` and `explorer` agents remain available as the OpenAI-backed workflow. Select `primary` explicitly when you want that path. GitHub Copilot remains the reviewer for both workflows. If it is unavailable, configure the `reviewer` model as `livai/gpt-5.6-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
 
 Explorer and Reviewer each have one focused skill, installed globally by `make install`:
 
@@ -37,9 +37,9 @@ Primary uses its always-on prompt and has no skill access. Each remaining skill 
 
 The OpenCode template enables these providers:
 
-- OpenAI, for Primary, Explorer, and the optional GPT-5.6 Sol reviewer.
+- OpenAI, for the alternate `primary` and `explorer` workflow.
 - GitHub Copilot, for the preferred Claude Sonnet 5 reviewer.
-- LivAI, as an optional provider. Its custom endpoint includes `livai/gpt-5.6-terra`, `livai/gpt-5.6-luna`, `livai/gpt-5.6-sol`, `livai/gpt-5.5`, `livai/gpt-5.4`, `livai/gpt-5-mini`, `livai/gpt-5-nano`, and `livai/claude-sonnet-4.5`. LivAI is intentionally not an automatic fallback.
+- LivAI, for the default `livai-primary` and `livai-explorer` workflow. Its custom endpoint includes `livai/gpt-5.6-terra`, `livai/gpt-5.6-luna`, `livai/gpt-5.6-sol`, `livai/gpt-5.5`, `livai/gpt-5.4`, `livai/gpt-5-mini`, `livai/gpt-5-nano`, and `livai/claude-sonnet-4.5`. LivAI is deliberately a first-class workflow, not an automatic fallback.
 
 Authenticate the providers you intend to use, then refresh the model list:
 

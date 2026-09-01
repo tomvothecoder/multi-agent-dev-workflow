@@ -21,7 +21,7 @@ test ! -e "$ROOT/global/uninstall-global-agent-workflow.sh"
 # The template is JSONC; all comments occupy their own lines.
 sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .plugin == null and
-  .default_agent == "primary" and
+  .default_agent == "livai-primary" and
   .subagent_depth == 1 and
   .enabled_providers == ["openai", "github-copilot", "livai"] and
   .provider.livai.models["gpt-5.6-terra"].name == "GPT-5.6 Terra" and
@@ -39,6 +39,17 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.explorer.permission.edit == "deny" and
   .agent.explorer.permission.task == "deny" and
   .agent.explorer.permission.skill == {"*":"deny","explore":"allow"} and
+  .agent["livai-primary"].model == "livai/gpt-5.6-terra" and
+  .agent["livai-primary"].mode == "primary" and
+  .agent["livai-primary"].reasoningEffort == "medium" and
+  .agent["livai-primary"].permission.task == {"*":"deny","livai-explorer":"allow","reviewer":"allow"} and
+  .agent["livai-primary"].permission.skill == "deny" and
+  .agent["livai-explorer"].mode == "subagent" and
+  .agent["livai-explorer"].model == "livai/gpt-5.6-luna" and
+  .agent["livai-explorer"].reasoningEffort == "low" and
+  .agent["livai-explorer"].permission.edit == "deny" and
+  .agent["livai-explorer"].permission.task == "deny" and
+  .agent["livai-explorer"].permission.skill == {"*":"deny","explore":"allow"} and
   .agent.reviewer.mode == "subagent" and
   .agent.reviewer.model == "github-copilot/claude-sonnet-5" and
   .agent.reviewer.permission.edit == "deny" and

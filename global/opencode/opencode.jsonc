@@ -5,7 +5,7 @@
   "share": "disabled",
   "autoupdate": false,
 
-  "default_agent": "primary",
+  "default_agent": "livai-primary",
   "subagent_depth": 1,
 
   // Only expose providers you actually intend to use.
@@ -158,6 +158,35 @@
       "description": "Performs targeted, read-only codebase investigation.",
       "mode": "subagent",
       "model": "openai/gpt-5.6-luna",
+      "reasoningEffort": "low",
+      "permission": {
+        "edit": "deny",
+        "bash": "deny",
+        "task": "deny",
+        "skill": { "*": "deny", "explore": "allow" },
+        "external_directory": "deny",
+        "webfetch": "deny",
+        "websearch": "deny"
+      },
+      "prompt": "Answer only the requested repository investigation. Search and read the codebase; do not edit files, run shell commands, browse the web, plan implementation, or delegate. Return concise findings with file paths and relevant symbols."
+    },
+
+    "livai-primary": {
+      "description": "LivAI-backed primary agent that plans, implements, tests, and fixes end-to-end.",
+      "mode": "primary",
+      "model": "livai/gpt-5.6-terra",
+      "reasoningEffort": "medium",
+      "permission": {
+        "task": { "*": "deny", "livai-explorer": "allow", "reviewer": "allow" },
+        "skill": "deny"
+      },
+      "prompt": "Own the task from plan through implementation and relevant verification. Work directly by default. Ask livai-explorer only a precise, read-only codebase question when it reduces material uncertainty. Ask reviewer once only after substantial changes and after running checks. Evaluate findings critically, fix valid ones, and rerun relevant checks. Do not use parallel edits, councils, fallback workers, or recursive delegation."
+    },
+
+    "livai-explorer": {
+      "description": "LivAI-backed explorer for targeted, read-only codebase investigation.",
+      "mode": "subagent",
+      "model": "livai/gpt-5.6-luna",
       "reasoningEffort": "low",
       "permission": {
         "edit": "deny",
