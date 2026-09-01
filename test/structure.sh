@@ -34,22 +34,26 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   (.provider.livai.models | has("gpt-5.6") | not) and
   .agent.primary.model == "openai/gpt-5.6-terra" and
   .agent.primary.mode == "primary" and
+  .agent.primary.variant == "medium" and
   .agent.primary.reasoningEffort == "medium" and
   .agent.primary.permission.task == {"*":"deny","explorer":"allow","reviewer":"allow"} and
   .agent.primary.permission.skill == "deny" and
   .agent.explorer.mode == "subagent" and
   .agent.explorer.model == "openai/gpt-5.6-luna" and
+  .agent.explorer.variant == "low" and
   .agent.explorer.reasoningEffort == "low" and
   .agent.explorer.permission.edit == "deny" and
   .agent.explorer.permission.task == "deny" and
   .agent.explorer.permission.skill == {"*":"deny","explore":"allow"} and
   .agent["livai-primary"].model == "livai/gpt-5.6-terra" and
   .agent["livai-primary"].mode == "primary" and
+  .agent["livai-primary"].variant == "medium" and
   .agent["livai-primary"].reasoningEffort == "medium" and
   .agent["livai-primary"].permission.task == {"*":"deny","livai-explorer":"allow","reviewer":"allow"} and
   .agent["livai-primary"].permission.skill == "deny" and
   .agent["livai-explorer"].mode == "subagent" and
   .agent["livai-explorer"].model == "livai/gpt-5.6-luna" and
+  .agent["livai-explorer"].variant == "low" and
   .agent["livai-explorer"].reasoningEffort == "low" and
   .agent["livai-explorer"].permission.edit == "deny" and
   .agent["livai-explorer"].permission.task == "deny" and
