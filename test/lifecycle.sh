@@ -8,9 +8,11 @@ CORE_CONFIG_HOME="$(mktemp -d)"
 trap 'rm -rf "$CORE_CONFIG_HOME"' EXIT
 CORE_CONFIG_DIR="$CORE_CONFIG_HOME/custom-opencode"
 CORE_CONFIG="$CORE_CONFIG_DIR/opencode.jsonc"
-HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/install-output"
 test -f "$CORE_CONFIG"
 test ! -L "$CORE_CONFIG"
+rg -Fq "OpenCode configuration: $CORE_CONFIG" "$CORE_CONFIG_HOME/install-output"
+rg -Fq "OpenCode instructions path: $CORE_CONFIG_DIR/AGENTS.md" "$CORE_CONFIG_HOME/install-output"
 cmp -s "$ROOT/global/opencode/opencode.jsonc" "$CORE_CONFIG"
 for skill in explore review; do
   test -f "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
@@ -18,16 +20,18 @@ for skill in explore review; do
 done
 
 # User-owned OpenCode instructions are created and refreshed independently.
-HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents-md
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents-md >"$CORE_CONFIG_HOME/agents-output"
 cmp -s "$ROOT/AGENTS.md" "$CORE_CONFIG_DIR/AGENTS.md"
+rg -Fq "Updated OpenCode instructions from the AGENTS.md template: $CORE_CONFIG_DIR/AGENTS.md" "$CORE_CONFIG_HOME/agents-output"
 printf 'outdated instructions\n' > "$CORE_CONFIG_DIR/AGENTS.md"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents-md
 cmp -s "$ROOT/AGENTS.md" "$CORE_CONFIG_DIR/AGENTS.md"
 
 # Selected configuration sections can be refreshed without replacing user-owned settings.
 python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("  \"autoupdate\": false,", "  \"autoupdate\": false,\n  \"custom\": { \"preserve\": true },"); text = text.replace("\"gpt-5.6-terra\"", "\"outdated-model\"", 1); path.write_text(text)' "$CORE_CONFIG"
-HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-livai-models
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-livai-models >"$CORE_CONFIG_HOME/models-output"
 rg -q '^  "custom": \{ "preserve": true \},$' "$CORE_CONFIG"
+rg -Fq "Updated livai-models from the OpenCode template: $CORE_CONFIG" "$CORE_CONFIG_HOME/models-output"
 test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '.provider.livai.models')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '.provider.livai.models')"
 
 python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); path.write_text(path.read_text().replace("\"primary\": {", "\"outdated-agent\": {", 1))' "$CORE_CONFIG"

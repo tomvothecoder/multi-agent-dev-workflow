@@ -19,7 +19,7 @@ if [ -e "$DESTINATION" ] && [ ! -f "$DESTINATION" ]; then
   exit 1
 fi
 if [ -f "$DESTINATION" ] && cmp -s "$TEMPLATE" "$DESTINATION"; then
-  printf 'OpenCode instructions already match the template.\n'
+  printf 'OpenCode instructions already match the template: %s\n' "$DESTINATION"
   exit 0
 fi
 
@@ -31,4 +31,4 @@ if [ -f "$DESTINATION" ]; then
 fi
 mv -f "$temporary" "$DESTINATION"
 trap - EXIT
-printf 'Updated OpenCode instructions from the AGENTS.md template.\n'
+printf 'Updated OpenCode instructions from the AGENTS.md template: %s\n' "$DESTINATION"

@@ -56,6 +56,8 @@ done
 
 if [ "$MODE" = all ]; then
   printf 'Initialized user-owned three-agent OpenCode configuration and skills in: %s\n' "$OPENCODE_CONFIG_DIR"
+  printf 'OpenCode configuration: %s\n' "$DESTINATION"
+  printf 'OpenCode instructions path: %s\n' "$OPENCODE_CONFIG_DIR/AGENTS.md"
 elif [ "$installed" -eq 0 ]; then
   printf 'All workflow skills are already present in: %s\n' "$SKILL_DESTINATION_DIR"
 else

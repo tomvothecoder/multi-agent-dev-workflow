@@ -162,7 +162,7 @@ def main():
         raise SystemExit("Could not synchronize OpenCode configuration: {}".format(error))
 
     if updated == destination_text:
-        print("Selected OpenCode configuration sections already match the template.")
+        print("Selected OpenCode configuration sections already match the template: {}".format(destination))
         return
 
     mode = stat.S_IMODE(destination.stat().st_mode)
@@ -177,7 +177,7 @@ def main():
         if temporary_path is not None and temporary_path.exists():
             temporary_path.unlink()
         raise
-    print("Updated {} from the OpenCode template.".format(", ".join(args.sections)))
+    print("Updated {} from the OpenCode template: {}".format(", ".join(args.sections), destination))
 
 
 if __name__ == "__main__":
