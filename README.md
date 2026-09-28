@@ -39,7 +39,7 @@ The OpenCode template enables these providers:
 
 - OpenAI, for the alternate `primary` and `explorer` workflow.
 - GitHub Copilot, for the preferred Claude Sonnet 5 reviewer.
-- LivAI, for the default `livai-primary` and `livai-explorer` workflow. Its custom endpoint includes `livai/gpt-5.6-terra`, `livai/gpt-5.6-luna`, `livai/gpt-5.6-sol`, and `livai/claude-sonnet-4.5`. LivAI is deliberately a first-class workflow, not an automatic fallback.
+- LivAI, for the default `livai-primary` and `livai-explorer` workflow. Its custom endpoint includes `livai/gpt-5.6-terra`, `livai/gpt-5.6-luna`, and `livai/gpt-5.6-sol`. LivAI is deliberately a first-class workflow, not an automatic fallback.
 
 Authenticate the providers you intend to use, then refresh the model list:
 

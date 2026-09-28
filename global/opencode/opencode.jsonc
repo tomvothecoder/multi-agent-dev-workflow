@@ -62,24 +62,6 @@
             "low": { "reasoningEffort": "low" },
             "none": { "reasoningEffort": "none" }
           }
-        },
-
-        "claude-sonnet-4.5": {
-          "name": "Claude Sonnet 4.5",
-
-          "variants": {
-            "thinking": {
-              "thinking": {
-                "type": "enabled"
-              }
-            },
-
-            "none": {
-              "thinking": {
-                "type": "disabled"
-              }
-            }
-          }
         }
       }
     }

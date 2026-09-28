@@ -27,7 +27,7 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .provider.livai.models["gpt-5.6-terra"].name == "GPT-5.6 Terra" and
   .provider.livai.models["gpt-5.6-luna"].name == "GPT-5.6 Luna" and
   .provider.livai.models["gpt-5.6-sol"].name == "GPT-5.6 Sol" and
-  (.provider.livai.models | keys == ["claude-sonnet-4.5", "gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"]) and
+  (.provider.livai.models | keys == ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"]) and
   (.provider.livai.models["gpt-5.6-terra"].variants | keys == ["high", "low", "medium", "none", "xhigh"]) and
   (.provider.livai.models["gpt-5.6-luna"].variants | keys == ["high", "low", "medium", "none", "xhigh"]) and
   (.provider.livai.models["gpt-5.6-sol"].variants | keys == ["high", "low", "medium", "none", "xhigh"]) and
