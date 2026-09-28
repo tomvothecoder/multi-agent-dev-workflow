@@ -17,6 +17,13 @@ for skill in explore review; do
   cmp -s "$ROOT/global/opencode/skills/$skill/SKILL.md" "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
 done
 
+# User-owned OpenCode instructions are created and refreshed independently.
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents-md
+cmp -s "$ROOT/AGENTS.md" "$CORE_CONFIG_DIR/AGENTS.md"
+printf 'outdated instructions\n' > "$CORE_CONFIG_DIR/AGENTS.md"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents-md
+cmp -s "$ROOT/AGENTS.md" "$CORE_CONFIG_DIR/AGENTS.md"
+
 # Selected configuration sections can be refreshed without replacing user-owned settings.
 python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("  \"autoupdate\": false,", "  \"autoupdate\": false,\n  \"custom\": { \"preserve\": true },"); text = text.replace("\"gpt-5.6-terra\"", "\"outdated-model\"", 1); path.write_text(text)' "$CORE_CONFIG"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-livai-models

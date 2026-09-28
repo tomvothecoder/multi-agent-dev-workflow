@@ -202,6 +202,7 @@
     "make update-agents": "allow",
     "make update-permissions": "allow",
     "make update-opencode-sections": "allow",
+    "make update-agents-md": "allow",
     "make install-nersc-rules": "allow",
     "make uninstall-nersc-rules": "allow",
     "make test": "allow",

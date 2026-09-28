@@ -77,9 +77,10 @@ When model releases require configuration updates, refresh only the relevant use
 make update-livai-models
 make update-agents
 make update-permissions
+make update-agents-md
 ```
 
-`make update-opencode-sections` refreshes all three sections together. These commands replace only `provider.livai.models`, `agent`, or `permission`, respectively; all other settings in your `opencode.jsonc` remain unchanged.
+`make update-opencode-sections` refreshes all three configuration sections together. `make update-agents-md` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; all other settings in your `opencode.jsonc` remain unchanged.
 
 ## Optional NERSC filesystem rules
 

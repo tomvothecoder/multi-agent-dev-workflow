@@ -1,9 +1,9 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-opencode install-opencode-config install-skills update-livai-models update-agents update-permissions update-opencode-sections install-nersc-rules uninstall-nersc-rules test structure-test
+.PHONY: help install install-opencode install-opencode-config install-skills update-livai-models update-agents update-permissions update-opencode-sections update-agents-md install-nersc-rules uninstall-nersc-rules test structure-test
 
 help:
-	@printf '%s\n' 'Targets:' '  install                  Initialize the user-owned OpenCode config and skills when absent' '  install-opencode         Alias for install' '  install-opencode-config  Alias for install' '  install-skills           Install missing workflow skills without changing the config' '  update-livai-models      Update only provider.livai.models from the template' '  update-agents            Update only agent from the template' '  update-permissions       Update only permission from the template' '  update-opencode-sections Update models, agents, and permissions from the template' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  test                     Run lifecycle and structure checks' '  structure-test           Validate the OpenCode template'
+	@printf '%s\n' 'Targets:' '  install                  Initialize the user-owned OpenCode config and skills when absent' '  install-opencode         Alias for install' '  install-opencode-config  Alias for install' '  install-skills           Install missing workflow skills without changing the config' '  update-livai-models      Update only provider.livai.models from the template' '  update-agents            Update only agent from the template' '  update-permissions       Update only permission from the template' '  update-opencode-sections Update models, agents, and permissions from the template' '  update-agents-md         Update AGENTS.md from the template' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  test                     Run lifecycle and structure checks' '  structure-test           Validate the OpenCode template'
 
 install:
 	@./global/install-opencode-config.sh
@@ -28,6 +28,9 @@ update-permissions:
 
 update-opencode-sections:
 	@./global/sync-opencode-config-sections.py livai-models agents permissions
+
+update-agents-md:
+	@./global/sync-opencode-agents-md.sh
 
 install-nersc-rules:
 	@./profiles/nersc/install-nersc-filesystem-rules.sh
