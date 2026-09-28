@@ -8,6 +8,17 @@ CORE_CONFIG_HOME="$(mktemp -d)"
 trap 'rm -rf "$CORE_CONFIG_HOME"' EXIT
 CORE_CONFIG_DIR="$CORE_CONFIG_HOME/custom-opencode"
 CORE_CONFIG="$CORE_CONFIG_DIR/opencode.jsonc"
+# Keep model refresh checks deterministic and independent of network/authentication.
+mkdir -p "$CORE_CONFIG_HOME/bin"
+export MODEL_REFRESH_LOG="$CORE_CONFIG_HOME/model-refresh-log"
+cat > "$CORE_CONFIG_HOME/bin/opencode" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+test "$*" = 'models --refresh'
+printf 'refresh\n' >> "$MODEL_REFRESH_LOG"
+EOF
+chmod +x "$CORE_CONFIG_HOME/bin/opencode"
+export PATH="$CORE_CONFIG_HOME/bin:$PATH"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/install-output"
 test -f "$CORE_CONFIG"
 test ! -L "$CORE_CONFIG"
@@ -36,6 +47,7 @@ test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -
 
 python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); path.write_text(path.read_text().replace("\"primary\": {", "\"outdated-agent\": {", 1))' "$CORE_CONFIG"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents
+test "$(wc -l < "$MODEL_REFRESH_LOG" | tr -d ' ')" = 1
 test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '.agent')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '.agent')"
 
 python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); path.write_text(path.read_text().replace("  \"permission\": {", "  \"outdated-permission\": {", 1))' "$CORE_CONFIG"
@@ -44,6 +56,7 @@ test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -
 
 python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("\"gpt-5.6-terra\"", "\"outdated-model\"", 1).replace("\"primary\": {", "\"outdated-agent\": {", 1).replace("  \"permission\": {", "  \"outdated-permission\": {", 1); path.write_text(text)' "$CORE_CONFIG"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-opencode-sections
+test "$(wc -l < "$MODEL_REFRESH_LOG" | tr -d ' ')" = 2
 test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '{models: .provider.livai.models, agent, permission}')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '{models: .provider.livai.models, agent, permission}')"
 
 # Existing user-owned configuration is never replaced.

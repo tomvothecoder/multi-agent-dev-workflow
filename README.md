@@ -45,7 +45,7 @@ Authenticate the providers you intend to use, then refresh the model list:
 
 ```bash
 opencode auth login
-opencode models --refresh
+make refresh-models
 ```
 
 Confirm the exact IDs exposed to your account before changing model assignments. For LivAI, set the API key in your user-owned configuration; never commit it.
@@ -70,6 +70,8 @@ make install-skills
 ```
 
 ### Refreshing template sections
+
+`make update-agents` and `make update-opencode-sections` run `make refresh-models` before updating configuration. If the model refresh fails, the configuration update stops.
 
 When model releases require configuration updates, refresh only the relevant user-owned sections from the repository template:
 
