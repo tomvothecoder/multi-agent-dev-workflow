@@ -63,6 +63,7 @@
             "none": { "reasoningEffort": "none" }
           }
         },
+
         "claude-sonnet-4.5": {
           "name": "Claude Sonnet 4.5",
 
@@ -88,7 +89,7 @@
     "primary": {
       "description": "Plans, implements, tests, and fixes the task end-to-end.",
       "mode": "primary",
-      "model": "openai/gpt-5.6-terra",
+      "model": "openai/gpt-6.0-sol",
       "variant": "medium",
       "reasoningEffort": "medium",
       "permission": {
@@ -101,7 +102,7 @@
     "explorer": {
       "description": "Performs targeted, read-only codebase investigation.",
       "mode": "subagent",
-      "model": "openai/gpt-5.6-luna",
+      "model": "openai/gpt-6.0-luna",
       "variant": "low",
       "reasoningEffort": "low",
       "permission": {
@@ -166,25 +167,76 @@
 
   "permission": {
     "skill": "allow",
+  "bash": {
+    "*": "ask",
 
-    "bash": {
-      "*": "ask",
+    "git *": "allow",
+    "grep *": "allow",
+    "ls *": "allow",
+    "pwd": "allow",
 
-      // Common safe development commands.
-      "git *": "allow",
-      "grep *": "allow",
-      "ls *": "allow",
-      "pwd": "allow",
-      "npm *": "allow",
-      "uv *": "allow",
-      "pytest *": "allow",
-      "ruff *": "allow",
+    "uv *": "allow",
+    "pytest *": "allow",
+    "ruff *": "allow",
 
-      // Require confirmation for arbitrary network requests.
-      "curl *": "ask",
+    // Frontend checks
+    "pnpm run build": "allow",
+    "pnpm run ci": "allow",
+    "pnpm run type-check": "allow",
+    "pnpm lint": "allow",
+    "pnpm type-check": "allow",
+    "pnpm --dir frontend run lint": "allow",
+    "pnpm --dir frontend run type-check": "allow",
+    "pnpm --dir frontend run ci": "allow",
+    "pnpm --dir frontend run format:check": "allow",
+    "make frontend-lint": "allow",
+    "make frontend-build": "allow",
 
-      // Never allow destructive rm automatically.
-      "rm *": "deny"
-    }
+    // Backend and repository checks
+    "make help": "allow",
+    "make install": "allow",
+    "make install-opencode": "allow",
+    "make install-opencode-config": "allow",
+    "make install-skills": "allow",
+    "make install-nersc-rules": "allow",
+    "make uninstall-nersc-rules": "allow",
+    "make test": "allow",
+    "make structure-test": "allow",
+    "make backend-test": "allow",
+    "make pre-commit-run": "allow",
+    "uv run pytest *": "allow",
+    "uv run ruff *": "allow",
+    "uv run ty check": "allow",
+
+    // Git inspection and intended PR workflow
+    "git status *": "allow",
+    "git diff *": "allow",
+    "git show *": "allow",
+    "git log *": "allow",
+    "git branch *": "allow",
+    "git remote *": "allow",
+    "git add *": "allow",
+    "git commit *": "allow",
+    "git push *": "allow",
+    "git ls-remote *": "allow",
+
+    // GitHub issue and PR workflow
+    "gh label list *": "allow",
+    "gh issue comment *": "allow",
+    "gh issue create *": "allow",
+    "gh issue list *": "allow",
+    "gh issue edit *": "allow",
+    "gh issue view *": "allow",
+    "gh pr comment *": "allow",
+    "gh pr create *": "allow",
+    "gh pr edit *": "allow",
+    "gh pr list *": "allow",
+    "gh pr view *": "allow",
+    "gh repo view *": "allow",
+    "gh api *": "allow",
+
+    "curl *": "ask",
+    "rm *": "deny"
   }
+}
 }

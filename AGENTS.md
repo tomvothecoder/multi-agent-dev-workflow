@@ -19,6 +19,7 @@ These are global defaults for a direct OpenCode workflow. Repository-level `AGEN
 - Follow existing project patterns.
 - Do not edit generated files unless explicitly required.
 - Prefer deterministic tests and CI over agent agreement.
+- Check the repository `Makefile` first and use its applicable targets before running one-off commands with tools such as `uv`, `python`, or `conda`.
 - Do not expose secrets, credentials, tokens, private keys, or unapproved proprietary data.
 - Do not commit, push, open PRs, or merge unless explicitly asked.
 
