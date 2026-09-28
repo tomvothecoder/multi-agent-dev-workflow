@@ -199,6 +199,7 @@
     "make install-opencode-config": "allow",
     "make install-skills": "allow",
     "make refresh-models": "allow",
+    "make update-opencode": "allow",
     "make update-livai-models": "allow",
     "make update-agents": "allow",
     "make update-permissions": "allow",

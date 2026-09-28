@@ -14,6 +14,7 @@ export MODEL_REFRESH_LOG="$CORE_CONFIG_HOME/model-refresh-log"
 cat > "$CORE_CONFIG_HOME/bin/opencode" <<'EOF'
 #!/usr/bin/env bash
 set -eu
+if [ "$*" = upgrade ]; then exit 0; fi
 test "$*" = 'models --refresh'
 printf 'refresh\n' >> "$MODEL_REFRESH_LOG"
 EOF

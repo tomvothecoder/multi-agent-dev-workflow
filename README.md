@@ -50,6 +50,8 @@ make refresh-models
 
 Confirm the exact IDs exposed to your account before changing model assignments. For LivAI, set the API key in your user-owned configuration; never commit it.
 
+Run `make update-opencode` to upgrade OpenCode, refresh its model catalog, and sync the LivAI models, agents, and permissions from the template, in that order. OpenCode detects the installation method automatically. A failed step stops the remaining steps.
+
 ## Setup
 
 1. Install OpenCode using its [official instructions](https://opencode.ai/).
@@ -71,7 +73,7 @@ make install-skills
 
 ### Refreshing template sections
 
-`make update-agents` and `make update-opencode-sections` run `make refresh-models` before updating configuration. If the model refresh fails, the configuration update stops.
+`make update-agents` runs `make refresh-models` before updating configuration. If the model refresh fails, the configuration update stops.
 
 When model releases require configuration updates, refresh only the relevant user-owned sections from the repository template:
 
@@ -82,7 +84,7 @@ make update-permissions
 make update-agents-md
 ```
 
-`make update-opencode-sections` refreshes all three configuration sections together. `make update-agents-md` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; all other settings in your `opencode.jsonc` remain unchanged.
+`make update-opencode-sections` is a compatibility alias for `make update-opencode`, including the upgrade and model refresh. `make update-agents-md` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; all other settings in your `opencode.jsonc` remain unchanged.
 
 ## Optional NERSC filesystem rules
 
