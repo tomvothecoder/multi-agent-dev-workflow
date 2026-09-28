@@ -17,6 +17,24 @@ for skill in explore review; do
   cmp -s "$ROOT/global/opencode/skills/$skill/SKILL.md" "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
 done
 
+# Selected configuration sections can be refreshed without replacing user-owned settings.
+python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("  \"autoupdate\": false,", "  \"autoupdate\": false,\n  \"custom\": { \"preserve\": true },"); text = text.replace("\"gpt-5.6-terra\"", "\"outdated-model\"", 1); path.write_text(text)' "$CORE_CONFIG"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-livai-models
+rg -q '^  "custom": \{ "preserve": true \},$' "$CORE_CONFIG"
+test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '.provider.livai.models')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '.provider.livai.models')"
+
+python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); path.write_text(path.read_text().replace("\"primary\": {", "\"outdated-agent\": {", 1))' "$CORE_CONFIG"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents
+test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '.agent')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '.agent')"
+
+python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); path.write_text(path.read_text().replace("  \"permission\": {", "  \"outdated-permission\": {", 1))' "$CORE_CONFIG"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-permissions
+test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '.permission')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '.permission')"
+
+python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("\"gpt-5.6-terra\"", "\"outdated-model\"", 1).replace("\"primary\": {", "\"outdated-agent\": {", 1).replace("  \"permission\": {", "  \"outdated-permission\": {", 1); path.write_text(text)' "$CORE_CONFIG"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-opencode-sections
+test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '{models: .provider.livai.models, agent, permission}')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '{models: .provider.livai.models, agent, permission}')"
+
 # Existing user-owned configuration is never replaced.
 if HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/config-error" 2>&1; then exit 1; fi
 rg -q 'Refusing to replace existing user-owned OpenCode configuration:' "$CORE_CONFIG_HOME/config-error"

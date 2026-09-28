@@ -69,6 +69,18 @@ Existing user-owned configuration remains yours. Merge the three-agent section d
 make install-skills
 ```
 
+### Refreshing template sections
+
+When model releases require configuration updates, refresh only the relevant user-owned sections from the repository template:
+
+```bash
+make update-livai-models
+make update-agents
+make update-permissions
+```
+
+`make update-opencode-sections` refreshes all three sections together. These commands replace only `provider.livai.models`, `agent`, or `permission`, respectively; all other settings in your `opencode.jsonc` remain unchanged.
+
 ## Optional NERSC filesystem rules
 
 ```bash

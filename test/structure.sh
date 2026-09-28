@@ -64,7 +64,7 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.reviewer.permission.task == "deny" and
   .agent.reviewer.permission.skill == {"*":"deny","review":"allow"} and
   .agent.reviewer.permission.bash["git diff*"] == "allow" and
-  (. as $config | ["make help", "make install", "make install-opencode", "make install-opencode-config", "make install-skills", "make install-nersc-rules", "make uninstall-nersc-rules", "make test", "make structure-test"] | all(. as $command | $config.permission.bash[$command] == "allow"))
+  (. as $config | ["make help", "make install", "make install-opencode", "make install-opencode-config", "make install-skills", "make update-livai-models", "make update-agents", "make update-permissions", "make update-opencode-sections", "make install-nersc-rules", "make uninstall-nersc-rules", "make test", "make structure-test"] | all(. as $command | $config.permission.bash[$command] == "allow"))
 ' >/dev/null
 
 printf 'Structure test passed.\n'
