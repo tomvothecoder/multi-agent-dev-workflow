@@ -89,7 +89,7 @@
     "primary": {
       "description": "Plans, implements, tests, and fixes the task end-to-end.",
       "mode": "primary",
-      "model": "openai/gpt-6.0-sol",
+      "model": "openai/gpt-6-sol",
       "variant": "medium",
       "reasoningEffort": "medium",
       "permission": {
@@ -102,7 +102,7 @@
     "explorer": {
       "description": "Performs targeted, read-only codebase investigation.",
       "mode": "subagent",
-      "model": "openai/gpt-6.0-luna",
+      "model": "openai/gpt-6-luna",
       "variant": "low",
       "reasoningEffort": "low",
       "permission": {
