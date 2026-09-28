@@ -18,13 +18,13 @@ flowchart LR
 
 ## Agents
 
-| Agent      | Model                            | Role                                                                                      | Permissions                                                                              |
-| ---------- | -------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `livai-primary`  | `livai/gpt-5.6-terra`, medium   | Default primary: plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only LivAI Explorer or Reviewer. |
-| `livai-explorer` | `livai/gpt-5.6-luna`, low       | Targeted repository investigation for LivAI Primary.                                      | Read/search only; no shell, edits, web access, or delegation.       |
-| `reviewer` | `github-copilot/claude-sonnet-5` | One independent review after substantial changes.                                         | Read-only; may inspect `git status`, `git diff`, and `git show`; no edits or delegation. |
+| Agent            | Model                            | Role                                                                                                       | Permissions                                                                              |
+| ---------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `livai-primary`  | `livai/gpt-6-sol`, medium        | Default primary: plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only LivAI Explorer or Reviewer.                     |
+| `livai-explorer` | `livai/gpt-6-luna`, low          | Targeted repository investigation for LivAI Primary.                                                       | Read/search only; no shell, edits, web access, or delegation.                            |
+| `reviewer`       | `github-copilot/claude-opus-5-5` | One independent review after substantial changes.                                                          | Read-only; may inspect `git status`, `git diff`, and `git show`; no edits or delegation. |
 
-The existing `primary` and `explorer` agents remain available as the OpenAI-backed workflow. Select `primary` explicitly when you want that path. GitHub Copilot remains the reviewer for both workflows. If it is unavailable, configure the `reviewer` model as `livai/gpt-5.6-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
+The existing `primary` and `explorer` agents remain available as the OpenAI-backed workflow. Select `primary` explicitly when you want that path. GitHub Copilot remains the reviewer for both workflows. If it is unavailable, configure the `reviewer` model as `livai/gpt-6.6-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
 
 Explorer and Reviewer each have one focused skill, installed globally by `make install`:
 
@@ -50,7 +50,7 @@ make refresh-models
 
 Confirm the exact IDs exposed to your account before changing model assignments. For LivAI, set the API key in your user-owned configuration; never commit it.
 
-Run `make update-opencode` to upgrade OpenCode, refresh its model catalog, and sync the LivAI models, agents, and permissions from the template, in that order. OpenCode detects the installation method automatically. A failed step stops the remaining steps.
+Run `make update-opencode` to upgrade OpenCode, refresh its model catalog, and sync the configured template sections, in that order. Installations without `provider.livai` skip the LivAI model section while still updating agents and permissions. OpenCode detects the installation method automatically. A failed step stops the remaining steps.
 
 ## Setup
 
@@ -84,7 +84,7 @@ make update-permissions
 make update-agents-md
 ```
 
-`make update-opencode-sections` is a compatibility alias for `make update-opencode`, including the upgrade and model refresh. `make update-agents-md` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; all other settings in your `opencode.jsonc` remain unchanged.
+`make update-opencode-sections` is a compatibility alias for `make update-opencode`, including the upgrade and model refresh. `make update-agents-md` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; when `provider.livai` is absent, its model section is skipped. All other settings in your `opencode.jsonc` remain unchanged.
 
 ## Optional NERSC filesystem rules
 
@@ -94,18 +94,6 @@ make uninstall-nersc-rules
 ```
 
 This profile is independent of the agent configuration.
-
-## Removing oh-my-opencode-slim
-
-After the native configuration works, remove Slim from your active OpenCode configuration directory:
-
-1. Back up user-owned Slim files. Run the previous repository version's `make uninstall` first if it installed managed Slim links.
-2. Remove `"oh-my-opencode-slim"` from the `plugin` array in `opencode.json` or `opencode.jsonc`.
-3. Restore built-in `general` and `explore` agents if Slim disabled them; remove a Slim-added `lsp` setting only when it was not pre-existing.
-4. Remove the Slim entry from `tui.json` and remove `OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS` from your shell startup file if Slim added it.
-5. After checking ownership, remove its configuration files, managed skills, cache, and optional companion binary. Restart OpenCode and confirm Slim agents no longer appear with `opencode auth status`.
-
-The [official Slim uninstallation guide](https://github.com/alvinunreal/oh-my-opencode-slim/blob/master/docs/installation.md#uninstallation) lists the current paths and cleanup details.
 
 ## Verification
 

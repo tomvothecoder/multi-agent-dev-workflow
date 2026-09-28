@@ -116,10 +116,23 @@ def section_span(text, section):
     return object_property(text, 0, "permission")
 
 
+def has_livai_provider(text):
+    try:
+        provider_start, _ = object_property(text, 0, "provider")
+        object_property(text, provider_start, "livai")
+    except KeyError:
+        return False
+    return True
+
+
 def synchronize(template_text, destination_text, sections):
     replacements = []
+    skipped = []
     for section in sections:
         template_start, template_end = section_span(template_text, section)
+        if section == "livai-models" and not has_livai_provider(destination_text):
+            skipped.append(section)
+            continue
         destination_start, destination_end = section_span(destination_text, section)
         replacements.append(
             (destination_start, destination_end, template_text[template_start:template_end])
@@ -132,7 +145,7 @@ def synchronize(template_text, destination_text, sections):
     updated = destination_text
     for start, end, replacement in sorted(replacements, reverse=True):
         updated = updated[:start] + replacement + updated[end:]
-    return updated
+    return updated, skipped
 
 
 def main():
@@ -157,12 +170,15 @@ def main():
 
     try:
         destination_text = destination.read_text()
-        updated = synchronize(template.read_text(), destination_text, args.sections)
+        updated, skipped = synchronize(template.read_text(), destination_text, args.sections)
     except (KeyError, ValueError) as error:
         raise SystemExit("Could not synchronize OpenCode configuration: {}".format(error))
 
     if updated == destination_text:
-        print("Selected OpenCode configuration sections already match the template: {}".format(destination))
+        if skipped:
+            print("Skipped livai-models because provider.livai is not configured: {}".format(destination))
+        else:
+            print("Selected OpenCode configuration sections already match the template: {}".format(destination))
         return
 
     mode = stat.S_IMODE(destination.stat().st_mode)
@@ -177,7 +193,10 @@ def main():
         if temporary_path is not None and temporary_path.exists():
             temporary_path.unlink()
         raise
-    print("Updated {} from the OpenCode template: {}".format(", ".join(args.sections), destination))
+    updated_sections = [section for section in args.sections if section not in skipped]
+    print("Updated {} from the OpenCode template: {}".format(", ".join(updated_sections), destination))
+    if skipped:
+        print("Skipped livai-models because provider.livai is not configured: {}".format(destination))
 
 
 if __name__ == "__main__":

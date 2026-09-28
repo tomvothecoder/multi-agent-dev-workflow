@@ -60,6 +60,16 @@ HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" 
 test "$(wc -l < "$MODEL_REFRESH_LOG" | tr -d ' ')" = 2
 test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '{models: .provider.livai.models, agent, permission}')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '{models: .provider.livai.models, agent, permission}')"
 
+# Configuration synchronization remains usable for installations without LivAI.
+python3 -c 'import json, pathlib, sys; path = pathlib.Path(sys.argv[1]); config = json.loads("\n".join(line for line in path.read_text().splitlines() if not line.lstrip().startswith("//"))); del config["provider"]; config["agent"] = {"outdated-agent": {}}; config["permission"] = {"outdated": "permission"}; path.write_text(json.dumps(config, indent=2) + "\n")' "$CORE_CONFIG"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-opencode-sections >"$CORE_CONFIG_HOME/no-livai-output"
+test "$(wc -l < "$MODEL_REFRESH_LOG" | tr -d ' ')" = 3
+rg -Fq "Skipped livai-models because provider.livai is not configured: $CORE_CONFIG" "$CORE_CONFIG_HOME/no-livai-output"
+test "$(jq -c 'has("provider")' "$CORE_CONFIG")" = false
+test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '{agent, permission}')" = "$(jq -c '{agent, permission}' "$CORE_CONFIG")"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-livai-models >"$CORE_CONFIG_HOME/no-livai-models-output"
+rg -Fq "Skipped livai-models because provider.livai is not configured: $CORE_CONFIG" "$CORE_CONFIG_HOME/no-livai-models-output"
+
 # Existing user-owned configuration is never replaced.
 if HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/config-error" 2>&1; then exit 1; fi
 rg -q 'Refusing to replace existing user-owned OpenCode configuration:' "$CORE_CONFIG_HOME/config-error"
