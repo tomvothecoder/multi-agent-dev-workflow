@@ -38,6 +38,8 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.primary.reasoningEffort == "medium" and
   .agent.primary.permission.task == {"*":"deny","explorer":"allow","reviewer":"allow"} and
   .agent.primary.permission.skill == "deny" and
+  (.agent.primary.prompt == (.agent["livai-primary"].prompt | gsub("livai-explorer"; "explorer"))) and
+  (.agent.primary.prompt as $prompt | ["question or request only to review, answer without editing files", "unclear authorization to implement", "stop without editing files or running mutating commands", "explicit implementation request", "without an unnecessary approval turn", "formal plan only for non-trivial work", "Problem, Scope, Constraints and non-goals, Open questions (omit if none), Acceptance criteria, and Validation", "who must answer each open question and whether it blocks implementation", "Result (what changed and the outcome), Validation (checks run and results, plus relevant checks not run and why), and Remaining issues (omit if none)", "Never use the implementation-results format for plan-only responses"] | all(. as $phrase | $prompt | contains($phrase))) and
   .agent.explorer.mode == "subagent" and
   .agent.explorer.model == "openai/gpt-6-luna" and
   .agent.explorer.variant == "low" and
@@ -59,7 +61,7 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent["livai-explorer"].permission.task == "deny" and
   .agent["livai-explorer"].permission.skill == {"*":"deny","explore":"allow"} and
   .agent.reviewer.mode == "subagent" and
-  .agent.reviewer.model == "github-copilot/claude-sonnet-5" and
+  .agent.reviewer.model == "github-copilot/claude-opus-5.5" and
   .agent.reviewer.permission.edit == "deny" and
   .agent.reviewer.permission.task == "deny" and
   .agent.reviewer.permission.skill == {"*":"deny","review":"allow"} and

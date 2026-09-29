@@ -33,6 +33,21 @@ Explorer and Reviewer each have one focused skill, installed globally by `make i
 
 Primary uses its always-on prompt and has no skill access. Each remaining skill is visible only to its matching agent. Shared engineering rules live in [AGENTS.md](AGENTS.md).
 
+### Primary responses
+
+Both primary agents answer questions and review-only requests without editing. For "plan first", "no code", or unclear authorization to implement, they present the answer or plan and stop; a plan is not permission to implement. An explicit implementation request allows them to proceed through verification without another approval turn. User-specified response formats take precedence. Simple questions and trivial edits do not need a formal plan.
+
+For non-trivial plans, use these headings in order:
+
+1. **Problem** — the need this change addresses.
+2. **Scope** — what is included.
+3. **Constraints and non-goals** — what must remain unchanged or is excluded.
+4. **Open questions** — omit if none; identify who must answer each question and whether it blocks implementation. State non-blocking assumptions explicitly.
+5. **Acceptance criteria** — observable outcomes, not just implementation steps.
+6. **Validation** — concrete checks or why none apply.
+
+After implementation, report **Result** (what changed and the outcome), **Validation** (checks run and their results, plus relevant checks not run and why), and **Remaining issues** (omit if none). State clearly when implementation is incomplete. A plan-only response must not use this results format or imply that checks ran.
+
 ## Providers
 
 The OpenCode template enables these providers:
@@ -70,6 +85,8 @@ Existing user-owned configuration remains yours. Merge the three-agent section d
 ```bash
 make install-skills
 ```
+
+To receive updates to the primary response rules in an existing installation, review and merge the two primary prompts into your user-owned configuration. Alternatively, `make update-agents` refreshes the whole `agent` section from the template (after refreshing models); it **replaces all customizations in the user-owned agent section**, not just these prompts. Review your changes before running it. `make install` copies the updated prompts only when no configuration exists yet.
 
 ### Refreshing template sections
 

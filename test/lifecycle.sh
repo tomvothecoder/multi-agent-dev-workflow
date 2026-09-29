@@ -36,8 +36,10 @@ HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" 
 cmp -s "$ROOT/AGENTS.md" "$CORE_CONFIG_DIR/AGENTS.md"
 rg -Fq "Updated OpenCode instructions from the AGENTS.md template: $CORE_CONFIG_DIR/AGENTS.md" "$CORE_CONFIG_HOME/agents-output"
 printf 'outdated instructions\n' > "$CORE_CONFIG_DIR/AGENTS.md"
+chmod 600 "$CORE_CONFIG_DIR/AGENTS.md"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents-md
 cmp -s "$ROOT/AGENTS.md" "$CORE_CONFIG_DIR/AGENTS.md"
+test "$(stat -c %a "$CORE_CONFIG_DIR/AGENTS.md" 2>/dev/null || stat -f %Lp "$CORE_CONFIG_DIR/AGENTS.md")" = 600
 
 # Selected configuration sections can be refreshed without replacing user-owned settings.
 python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("  \"autoupdate\": false,", "  \"autoupdate\": false,\n  \"custom\": { \"preserve\": true },"); text = text.replace("\"gpt-5.6-terra\"", "\"outdated-model\"", 1); path.write_text(text)' "$CORE_CONFIG"
@@ -65,15 +67,16 @@ python3 -c 'import json, pathlib, sys; path = pathlib.Path(sys.argv[1]); config 
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-opencode-sections >"$CORE_CONFIG_HOME/no-livai-output"
 test "$(wc -l < "$MODEL_REFRESH_LOG" | tr -d ' ')" = 3
 rg -Fq "Skipped livai-models because provider.livai is not configured: $CORE_CONFIG" "$CORE_CONFIG_HOME/no-livai-output"
-test "$(jq -c 'has("provider")' "$CORE_CONFIG")" = false
-test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '{agent, permission}')" = "$(jq -c '{agent, permission}' "$CORE_CONFIG")"
+test "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c 'has("provider")')" = false
+test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '{agent, permission}')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '{agent, permission}')"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-livai-models >"$CORE_CONFIG_HOME/no-livai-models-output"
 rg -Fq "Skipped livai-models because provider.livai is not configured: $CORE_CONFIG" "$CORE_CONFIG_HOME/no-livai-models-output"
 
 # Existing user-owned configuration is never replaced.
+cp "$CORE_CONFIG" "$CORE_CONFIG_HOME/before-reinstall"
 if HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/config-error" 2>&1; then exit 1; fi
 rg -q 'Refusing to replace existing user-owned OpenCode configuration:' "$CORE_CONFIG_HOME/config-error"
-cmp -s "$ROOT/global/opencode/opencode.jsonc" "$CORE_CONFIG"
+cmp -s "$CORE_CONFIG_HOME/before-reinstall" "$CORE_CONFIG"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install-skills >"$CORE_CONFIG_HOME/skills-output"
 rg -q 'All workflow skills are already present in:' "$CORE_CONFIG_HOME/skills-output"
 

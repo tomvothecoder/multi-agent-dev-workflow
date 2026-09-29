@@ -22,6 +22,8 @@ update-opencode:
 	@$(MAKE) refresh-models
 	@./global/sync-opencode-config-sections.py livai-models agents permissions
 
+update-opencode-sections: update-opencode
+
 refresh-models:
 	@opencode models --refresh
 

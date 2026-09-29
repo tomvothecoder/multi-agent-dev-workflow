@@ -27,7 +27,8 @@ temporary="$(mktemp "$OPENCODE_CONFIG_DIR/.AGENTS.md.XXXXXX")"
 trap 'rm -f "$temporary"' EXIT
 cp "$TEMPLATE" "$temporary"
 if [ -f "$DESTINATION" ]; then
-  chmod --reference="$DESTINATION" "$temporary"
+  mode="$(stat -c %a "$DESTINATION" 2>/dev/null || stat -f %Lp "$DESTINATION")"
+  chmod "$mode" "$temporary"
 fi
 mv -f "$temporary" "$DESTINATION"
 trap - EXIT
