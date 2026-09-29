@@ -26,6 +26,9 @@ test ! -L "$CORE_CONFIG"
 rg -Fq "OpenCode configuration: $CORE_CONFIG" "$CORE_CONFIG_HOME/install-output"
 rg -Fq "OpenCode instructions path: $CORE_CONFIG_DIR/AGENTS.md" "$CORE_CONFIG_HOME/install-output"
 cmp -s "$ROOT/global/opencode/opencode.jsonc" "$CORE_CONFIG"
+for command in plan implement review-again draft-pr; do
+  cmp -s "$ROOT/global/opencode/commands/$command.md" "$CORE_CONFIG_DIR/commands/$command.md"
+done
 for skill in explore review; do
   test -f "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
   cmp -s "$ROOT/global/opencode/skills/$skill/SKILL.md" "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
@@ -92,6 +95,32 @@ test ! -e "$SKILL_CONFLICT_DIR/opencode.jsonc"
 test "$(<"$SKILL_CONFLICT_DIR/skills/explore/SKILL.md")" = 'user-owned skill'
 cmp -s "$ROOT/global/opencode/skills/review/SKILL.md" "$SKILL_CONFLICT_DIR/skills/review/SKILL.md"
 rm -rf "$SKILL_CONFLICT_HOME"
+
+# Commands install independently, preserve conflicts/symlinks, and are idempotent.
+COMMAND_CONFIG_DIR="$CORE_CONFIG_HOME/commands-only"
+mkdir -p "$COMMAND_CONFIG_DIR/commands"
+printf 'user-owned command\n' > "$COMMAND_CONFIG_DIR/commands/plan.md"
+ln -s "$COMMAND_CONFIG_DIR/missing-target" "$COMMAND_CONFIG_DIR/commands/draft-pr.md"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$COMMAND_CONFIG_DIR" make -C "$ROOT" install-commands
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$COMMAND_CONFIG_DIR" make -C "$ROOT" install-commands
+test "$(<"$COMMAND_CONFIG_DIR/commands/plan.md")" = 'user-owned command'
+test -L "$COMMAND_CONFIG_DIR/commands/draft-pr.md"
+test ! -e "$COMMAND_CONFIG_DIR/missing-target"
+for command in implement review-again; do
+  cmp -s "$ROOT/global/opencode/commands/$command.md" "$COMMAND_CONFIG_DIR/commands/$command.md"
+done
+test ! -e "$COMMAND_CONFIG_DIR/opencode.jsonc"
+test ! -e "$COMMAND_CONFIG_DIR/skills"
+
+# A non-directory commands path is rejected before initializing configuration.
+BLOCKED_COMMAND_DIR="$CORE_CONFIG_HOME/blocked-commands"
+mkdir -p "$BLOCKED_COMMAND_DIR"
+printf 'not a directory\n' > "$BLOCKED_COMMAND_DIR/commands"
+for target in install install-commands; do
+  if HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$BLOCKED_COMMAND_DIR" make -C "$ROOT" "$target" >"$CORE_CONFIG_HOME/command-error" 2>&1; then exit 1; fi
+  rg -q 'Refusing to use non-directory OpenCode commands directory:' "$CORE_CONFIG_HOME/command-error"
+  test ! -e "$BLOCKED_COMMAND_DIR/opencode.jsonc"
+done
 
 # A non-directory configuration path is rejected before creating directories.
 NON_DIRECTORY_HOME="$(mktemp -d)"

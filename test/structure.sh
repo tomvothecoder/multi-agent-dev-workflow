@@ -12,6 +12,26 @@ for skill in explore review; do
   rg -q "^name: $skill$" "$ROOT/global/opencode/skills/$skill/SKILL.md"
 done
 test ! -e "$ROOT/profiles/nersc/nersc-filesystem.md"
+for command in plan implement review-again draft-pr; do
+  prompt="$ROOT/global/opencode/commands/$command.md"
+  test -f "$prompt"
+  test "$(rg -c '^---$' "$prompt")" = 2
+  rg -q '^description: ' "$prompt"
+  rg -Fq 'issue #$1' "$prompt"
+  rg -Fq 'ask for' "$prompt"
+  rg -Fq 'Require a bare positive integer issue number' "$prompt"
+  # Retain the selected primary rather than invoking a read-only subagent.
+  if rg -q '^(agent|subtask|model):' "$prompt"; then exit 1; fi
+done
+rg -Fq 'Do not modify files or run mutating commands.' "$ROOT/global/opencode/commands/plan.md"
+rg -Fq 'approved plan' "$ROOT/global/opencode/commands/implement.md"
+for command in implement review-again; do
+  rg -Fq 'Do not commit, push, or open a PR' "$ROOT/global/opencode/commands/$command.md"
+done
+rg -Fq 'explicit human gate' "$ROOT/global/opencode/commands/draft-pr.md"
+rg -Fq 'draft PR using the repository' "$ROOT/global/opencode/commands/draft-pr.md"
+rg -Fq 'do not merge' "$ROOT/global/opencode/commands/draft-pr.md"
+rg -Fq 'Do not publish directly to the default or base branch.' "$ROOT/global/opencode/commands/draft-pr.md"
 test ! -e "$ROOT/global/opencode/oh-my-opencode-slim.jsonc"
 test ! -e "$ROOT/global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
 test ! -e "$ROOT/global/backup-global-agent-workflow.sh"
@@ -20,6 +40,7 @@ test ! -e "$ROOT/global/uninstall-global-agent-workflow.sh"
 
 # The template is JSONC; all comments occupy their own lines.
 sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
+  .permission.bash["make install-commands"] == "allow" and
   .plugin == null and
   .default_agent == "livai-primary" and
   .subagent_depth == 1 and

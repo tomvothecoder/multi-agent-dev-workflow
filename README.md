@@ -49,6 +49,29 @@ For non-trivial plans, use these headings in order:
 
 After implementation, report **Result** (what changed and the outcome), **Validation** (checks run and their results, plus relevant checks not run and why), and **Remaining issues** (omit if none). State clearly when implementation is incomplete. A plan-only response must not use this results format or imply that checks ran.
 
+## Issue prompt commands
+
+Use these commands with a bare issue number (for example, `42`, not `#42`):
+
+| Command | Stage |
+| --- | --- |
+| `/plan 42` | Read the issue and repository instructions, inspect code, and draft a plan. No edits; stops for approval. |
+| `/implement 42` | Implement the approved plan available in the conversation, update tests/docs, and run quality checks. |
+| `/review-again 42` | Optional primary-agent review of the actual changes, followed by confirmed fixes and checks. |
+| `/draft-pr 42` | Explicit human gate: commit intended changes, push, and open a draft PR using the repository template. |
+
+Approve the plan before invoking `/implement`. Invoke `/draft-pr` only after reviewing the completed work and validation; the earlier stages never commit, push, or open a PR. The draft remains open for human review, with no automatic merge. These are prompt instructions, not a technical permission sandbox.
+
+Commands use the currently selected agent. Select `livai-primary` or `primary`; the read-only `reviewer` cannot implement fixes or publish a PR. `/review-again` is a user-requested direct review/fix pass, not another delegated reviewer invocation. GitHub operations require `gh` authentication and repository access.
+
+For an existing installation, install the commands without changing the configuration:
+
+```bash
+make install-commands
+```
+
+This copies missing files from `global/opencode/commands/` into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/commands/`. Existing same-named commands (including symlinks) are preserved. Review and merge future template changes manually. `/plan` overrides OpenCode's built-in command of the same name, if present.
+
 ## Providers
 
 The OpenCode template enables these providers:
@@ -77,7 +100,7 @@ Run `make update-opencode` to upgrade OpenCode, refresh its model catalog, and s
    make install
    ```
 
-   This copies `global/opencode/opencode.jsonc` and the two skills to `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It never replaces an existing configuration or same-named skill.
+   This copies `global/opencode/opencode.jsonc`, the two skills, and the four prompt commands to `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It never replaces an existing configuration, same-named skill, or command.
 
 3. Authenticate the providers above and start OpenCode.
 
@@ -123,6 +146,7 @@ make test
 
 - `global/opencode/opencode.jsonc`: user-owned native OpenCode template.
 - `global/opencode/skills/`: the two focused OpenCode skills.
+- `global/opencode/commands/`: issue planning, implementation, optional review/fix, and human-gated draft PR prompts.
 - `global/install-opencode-config.sh`: safe one-time config initializer.
 - `profiles/nersc/`: optional filesystem instruction profile.
 - `test/`: configuration and lifecycle checks.

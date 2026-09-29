@@ -8,10 +8,13 @@ DESTINATION="$OPENCODE_CONFIG_DIR/opencode.jsonc"
 SKILL_SOURCE_DIR="$ROOT/opencode/skills"
 SKILL_DESTINATION_DIR="$OPENCODE_CONFIG_DIR/skills"
 SKILLS=(explore review)
+COMMAND_SOURCE_DIR="$ROOT/opencode/commands"
+COMMAND_DESTINATION_DIR="$OPENCODE_CONFIG_DIR/commands"
+COMMANDS=(plan implement review-again draft-pr)
 MODE="${1:-all}"
 
-if [ "$MODE" != all ] && [ "$MODE" != skills ]; then
-  printf 'Usage: %s [skills]\n' "${0##*/}" >&2
+if [ "$MODE" != all ] && [ "$MODE" != skills ] && [ "$MODE" != commands ]; then
+  printf 'Usage: %s [skills|commands]\n' "${0##*/}" >&2
   exit 2
 fi
 
@@ -25,7 +28,7 @@ if [ "$MODE" = all ] && { [ -e "$DESTINATION" ] || [ -L "$DESTINATION" ]; }; the
   exit 1
 fi
 
-if { [ -e "$SKILL_DESTINATION_DIR" ] || [ -L "$SKILL_DESTINATION_DIR" ]; } && [ ! -d "$SKILL_DESTINATION_DIR" ]; then
+if [ "$MODE" != commands ] && { [ -e "$SKILL_DESTINATION_DIR" ] || [ -L "$SKILL_DESTINATION_DIR" ]; } && [ ! -d "$SKILL_DESTINATION_DIR" ]; then
   printf 'Refusing to use non-directory OpenCode skills directory: %s\n' "$SKILL_DESTINATION_DIR" >&2
   exit 1
 fi
@@ -39,7 +42,29 @@ if [ "$MODE" = all ]; then
   done
 fi
 
-mkdir -p "$OPENCODE_CONFIG_DIR" "$SKILL_DESTINATION_DIR"
+if [ "$MODE" != skills ] && { [ -e "$COMMAND_DESTINATION_DIR" ] || [ -L "$COMMAND_DESTINATION_DIR" ]; } && [ ! -d "$COMMAND_DESTINATION_DIR" ]; then
+  printf 'Refusing to use non-directory OpenCode commands directory: %s\n' "$COMMAND_DESTINATION_DIR" >&2
+  exit 1
+fi
+
+mkdir -p "$OPENCODE_CONFIG_DIR"
+if [ "$MODE" != skills ]; then
+  mkdir -p "$COMMAND_DESTINATION_DIR"
+  for command in "${COMMANDS[@]}"; do
+    destination="$COMMAND_DESTINATION_DIR/$command.md"
+    if [ -e "$destination" ] || [ -L "$destination" ]; then
+      printf 'Preserved existing OpenCode command: %s\n' "$destination"
+      continue
+    fi
+    cp "$COMMAND_SOURCE_DIR/$command.md" "$destination"
+    printf 'Installed OpenCode command: %s\n' "$destination"
+  done
+fi
+if [ "$MODE" = commands ]; then
+  exit 0
+fi
+
+mkdir -p "$SKILL_DESTINATION_DIR"
 if [ "$MODE" = all ]; then
   cp "$TEMPLATE" "$DESTINATION"
 fi
