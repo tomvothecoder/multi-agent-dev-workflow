@@ -32,7 +32,7 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   (.provider.livai.models["gpt-5.6-luna"].variants | keys == ["high", "low", "medium", "none", "xhigh"]) and
   (.provider.livai.models["gpt-5.6-sol"].variants | keys == ["high", "low", "medium", "none", "xhigh"]) and
   (.provider.livai.models | has("gpt-5.6") | not) and
-  .agent.primary.model == "openai/gpt-6-sol" and
+  .agent.primary.model == "openai/gpt-6.1-sol" and
   .agent.primary.mode == "primary" and
   .agent.primary.variant == "medium" and
   .agent.primary.reasoningEffort == "medium" and
