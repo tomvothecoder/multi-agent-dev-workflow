@@ -1,19 +1,35 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-opencode install-opencode-config install-skills install-commands update-opencode refresh-models update-livai-models update-agents update-permissions update-opencode-sections update-agents-md install-nersc-rules uninstall-nersc-rules test structure-test
+.PHONY: help
 
 help:
-	@printf '%s\n' 'Targets:' '  install                  Initialize the user-owned OpenCode config and skills when absent' '  install-opencode         Alias for install' '  install-opencode-config  Alias for install' '  install-skills           Install missing workflow skills without changing the config' '  update-opencode          Upgrade OpenCode, refresh models, and sync config' '  refresh-models           Refresh the OpenCode model catalog' '  update-livai-models      Update only provider.livai.models from the template' '  update-agents            Update only agent from the template' '  update-permissions       Update only permission from the template' '  update-opencode-sections Alias for update-opencode' '  update-agents-md         Update AGENTS.md from the template' '  install-nersc-rules      Install the optional NERSC filesystem rules profile' '  uninstall-nersc-rules    Remove the NERSC filesystem rules profile' '  test                     Run lifecycle and structure checks' '  structure-test           Validate the OpenCode template'
+	@printf '%s\n' \
+		'Installation:' \
+		'  install               Initialize config, skills, and commands when absent' \
+		'  install-skills        Install missing workflow skills without changing the config' \
+		'  install-commands      Install missing workflow commands without changing the config' \
+		'' 'Updates:' \
+		'  update-opencode       Upgrade OpenCode, refresh models, and sync config' \
+		'  refresh-models        Refresh the OpenCode model catalog' \
+		'  update-livai-models   Update only provider.livai.models from the template' \
+		'  update-agents         Refresh models and update only agent from the template' \
+		'  update-permissions    Update only permission from the template' \
+		'  update-agents-md      Update AGENTS.md from the template' \
+		'  update-skills         Replace managed SKILL.md files from the templates' \
+		'  update-commands       Replace managed workflow command templates' \
+		'  update-skills-commands Update both workflow skills and commands' \
+		'' 'Optional profiles:' \
+		'  install-nersc-rules   Install the optional NERSC filesystem rules profile' \
+		'  uninstall-nersc-rules Remove the NERSC filesystem rules profile' \
+		'' 'Validation:' \
+		'  test                  Run lifecycle and structure checks' \
+		'  structure-test        Validate the OpenCode template'
 
-	@printf '%s\n' '  install-commands         Install missing workflow prompt commands without changing the config'
+# --- Installation -------------------------------------------------------------
+
+.PHONY: install install-skills install-commands
 
 install:
-	@./global/install-opencode-config.sh
-
-install-opencode:
-	@./global/install-opencode-config.sh
-
-install-opencode-config:
 	@./global/install-opencode-config.sh
 
 install-skills:
@@ -22,12 +38,14 @@ install-skills:
 install-commands:
 	@./global/install-opencode-config.sh commands
 
+# --- Updates ------------------------------------------------------------------
+
+.PHONY: update-opencode refresh-models update-livai-models update-agents update-permissions update-agents-md update-skills update-commands update-skills-commands
+
 update-opencode:
 	@opencode upgrade
 	@$(MAKE) refresh-models
 	@./global/sync-opencode-config-sections.py livai-models agents permissions
-
-update-opencode-sections: update-opencode
 
 refresh-models:
 	@opencode models --refresh
@@ -44,11 +62,27 @@ update-permissions:
 update-agents-md:
 	@./global/sync-opencode-agents-md.sh
 
+update-skills:
+	@./global/install-opencode-config.sh update-skills
+
+update-commands:
+	@./global/install-opencode-config.sh update-commands
+
+update-skills-commands: update-skills update-commands
+
+# --- Optional profiles --------------------------------------------------------
+
+.PHONY: install-nersc-rules uninstall-nersc-rules
+
 install-nersc-rules:
 	@./profiles/nersc/install-nersc-filesystem-rules.sh
 
 uninstall-nersc-rules:
 	@./profiles/nersc/uninstall-nersc-filesystem-rules.sh
+
+# --- Validation ---------------------------------------------------------------
+
+.PHONY: test structure-test
 
 test:
 	@./test/lifecycle.sh

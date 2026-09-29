@@ -92,13 +92,25 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.reviewer.permission.task == "deny" and
   .agent.reviewer.permission.skill == {"*":"deny","review":"allow"} and
   .agent.reviewer.permission.bash["git diff*"] == "allow" and
-  (. as $config | ["make help", "make install", "make install-opencode", "make install-opencode-config", "make install-skills", "make refresh-models", "make update-opencode", "make update-livai-models", "make update-agents", "make update-permissions", "make update-opencode-sections", "make update-agents-md", "make install-nersc-rules", "make uninstall-nersc-rules", "make test", "make structure-test"] | all(. as $command | $config.permission.bash[$command] == "allow"))
+  (. as $config | ["make help", "make install", "make install-skills", "make install-commands", "make refresh-models", "make update-opencode", "make update-livai-models", "make update-agents", "make update-permissions", "make update-agents-md", "make update-skills", "make update-commands", "make update-skills-commands", "make install-nersc-rules", "make uninstall-nersc-rules", "make test", "make structure-test"] | all(. as $command | $config.permission.bash[$command] == "allow")) and
+  (. as $config | ["make install-opencode", "make install-opencode-config", "make update-opencode-sections"] | all(. as $command | $config.permission.bash | has($command) | not))
 ' >/dev/null
 
 # Verify upgrade ordering and failure handling without upgrading the host.
 CHECK_DIR="$(mktemp -d)"
 trap 'rm -rf "$CHECK_DIR"' EXIT
 cp "$ROOT/Makefile" "$CHECK_DIR/Makefile"
+make -s -C "$CHECK_DIR" > "$CHECK_DIR/help"
+for section in Installation Updates 'Optional profiles' Validation; do
+  rg -Fxq "$section:" "$CHECK_DIR/help"
+done
+for target in update-skills update-commands update-skills-commands; do
+  rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"
+done
+for target in install-opencode install-opencode-config update-opencode-sections; do
+  if make -n -C "$CHECK_DIR" "$target" >"$CHECK_DIR/error" 2>&1; then exit 1; fi
+  if rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"; then exit 1; fi
+done
 mkdir -p "$CHECK_DIR/global"
 cat > "$CHECK_DIR/global/sync-opencode-config-sections.py" <<'EOF'
 #!/usr/bin/env bash
@@ -118,7 +130,7 @@ test "$*" = 'models --refresh'
 exit "${REFRESH_TEST_EXIT:-0}"
 EOF
 chmod +x "$CHECK_DIR/opencode"
-for target in update-opencode update-opencode-sections; do
+target=update-opencode
 : > "$CHECK_DIR/log"
 PATH="$CHECK_DIR:$PATH" UPDATE_TEST_LOG="$CHECK_DIR/log" make -C "$CHECK_DIR" "$target" >/dev/null
 printf 'upgrade\nmodels --refresh\nsync\n' > "$CHECK_DIR/expected"
@@ -135,6 +147,5 @@ if PATH="$CHECK_DIR:$PATH" UPDATE_TEST_LOG="$CHECK_DIR/log" REFRESH_TEST_EXIT=1 
 fi
 printf 'upgrade\nmodels --refresh\n' > "$CHECK_DIR/expected"
 cmp "$CHECK_DIR/expected" "$CHECK_DIR/log"
-done
 
 printf 'Structure test passed.\n'

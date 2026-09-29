@@ -61,13 +61,13 @@ HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" 
 test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '.permission')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '.permission')"
 
 python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("\"gpt-5.6-terra\"", "\"outdated-model\"", 1).replace("\"primary\": {", "\"outdated-agent\": {", 1).replace("  \"permission\": {", "  \"outdated-permission\": {", 1); path.write_text(text)' "$CORE_CONFIG"
-HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-opencode-sections
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-opencode
 test "$(wc -l < "$MODEL_REFRESH_LOG" | tr -d ' ')" = 2
 test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '{models: .provider.livai.models, agent, permission}')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '{models: .provider.livai.models, agent, permission}')"
 
 # Configuration synchronization remains usable for installations without LivAI.
 python3 -c 'import json, pathlib, sys; path = pathlib.Path(sys.argv[1]); config = json.loads("\n".join(line for line in path.read_text().splitlines() if not line.lstrip().startswith("//"))); del config["provider"]; config["agent"] = {"outdated-agent": {}}; config["permission"] = {"outdated": "permission"}; path.write_text(json.dumps(config, indent=2) + "\n")' "$CORE_CONFIG"
-HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-opencode-sections >"$CORE_CONFIG_HOME/no-livai-output"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-opencode >"$CORE_CONFIG_HOME/no-livai-output"
 test "$(wc -l < "$MODEL_REFRESH_LOG" | tr -d ' ')" = 3
 rg -Fq "Skipped livai-models because provider.livai is not configured: $CORE_CONFIG" "$CORE_CONFIG_HOME/no-livai-output"
 test "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c 'has("provider")')" = false
@@ -75,13 +75,67 @@ test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-livai-models >"$CORE_CONFIG_HOME/no-livai-models-output"
 rg -Fq "Skipped livai-models because provider.livai is not configured: $CORE_CONFIG" "$CORE_CONFIG_HOME/no-livai-models-output"
 
-# Existing user-owned configuration is never replaced.
+# Reinstall preserves custom components and fills missing skills and commands.
 cp "$CORE_CONFIG" "$CORE_CONFIG_HOME/before-reinstall"
-if HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/config-error" 2>&1; then exit 1; fi
-rg -q 'Refusing to replace existing user-owned OpenCode configuration:' "$CORE_CONFIG_HOME/config-error"
+printf 'custom skill\n' > "$CORE_CONFIG_DIR/skills/explore/SKILL.md"
+printf 'custom command\n' > "$CORE_CONFIG_DIR/commands/plan.md"
+rm -r "$CORE_CONFIG_DIR/skills/review"
+rm "$CORE_CONFIG_DIR/commands/implement.md"
+for pass in 1 2; do
+  HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/reinstall-output"
+done
+rg -q 'Preserved existing user-owned OpenCode configuration:' "$CORE_CONFIG_HOME/reinstall-output"
 cmp -s "$CORE_CONFIG_HOME/before-reinstall" "$CORE_CONFIG"
+test "$(<"$CORE_CONFIG_DIR/skills/explore/SKILL.md")" = 'custom skill'
+test "$(<"$CORE_CONFIG_DIR/commands/plan.md")" = 'custom command'
+cmp -s "$ROOT/global/opencode/skills/review/SKILL.md" "$CORE_CONFIG_DIR/skills/review/SKILL.md"
+cmp -s "$ROOT/global/opencode/commands/implement.md" "$CORE_CONFIG_DIR/commands/implement.md"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install-skills >"$CORE_CONFIG_HOME/skills-output"
 rg -q 'All workflow skills are already present in:' "$CORE_CONFIG_HOME/skills-output"
+
+# Updates are scoped, preserve unrelated files, and can be repeated.
+printf 'extra skill file\n' > "$CORE_CONFIG_DIR/skills/explore/notes.txt"
+mkdir -p "$CORE_CONFIG_DIR/skills/custom"
+printf 'unrelated skill\n' > "$CORE_CONFIG_DIR/skills/custom/SKILL.md"
+printf 'unrelated command\n' > "$CORE_CONFIG_DIR/commands/custom.md"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-skills
+cmp -s "$ROOT/global/opencode/skills/explore/SKILL.md" "$CORE_CONFIG_DIR/skills/explore/SKILL.md"
+test "$(<"$CORE_CONFIG_DIR/commands/plan.md")" = 'custom command'
+printf 'stale skill\n' > "$CORE_CONFIG_DIR/skills/explore/SKILL.md"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-commands
+cmp -s "$ROOT/global/opencode/commands/plan.md" "$CORE_CONFIG_DIR/commands/plan.md"
+test "$(<"$CORE_CONFIG_DIR/skills/explore/SKILL.md")" = 'stale skill'
+for pass in 1 2; do
+  HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-skills-commands
+done
+for skill in explore review; do
+  cmp -s "$ROOT/global/opencode/skills/$skill/SKILL.md" "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
+done
+for command in plan implement review-again draft-pr; do
+  cmp -s "$ROOT/global/opencode/commands/$command.md" "$CORE_CONFIG_DIR/commands/$command.md"
+done
+cmp -s "$CORE_CONFIG_HOME/before-reinstall" "$CORE_CONFIG"
+test "$(<"$CORE_CONFIG_DIR/skills/explore/notes.txt")" = 'extra skill file'
+test "$(<"$CORE_CONFIG_DIR/skills/custom/SKILL.md")" = 'unrelated skill'
+test "$(<"$CORE_CONFIG_DIR/commands/custom.md")" = 'unrelated command'
+
+# Each update can bootstrap missing templates without creating other components.
+for component in skills commands; do
+  UPDATE_DIR="$CORE_CONFIG_HOME/update $component"
+  HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$UPDATE_DIR" make -C "$ROOT" "update-$component"
+  test ! -e "$UPDATE_DIR/opencode.jsonc"
+  if [ "$component" = skills ]; then
+    test ! -e "$UPDATE_DIR/commands"
+    for skill in explore review; do
+      cmp -s "$ROOT/global/opencode/skills/$skill/SKILL.md" "$UPDATE_DIR/skills/$skill/SKILL.md"
+    done
+  else
+    test ! -e "$UPDATE_DIR/skills"
+    for command in plan implement review-again draft-pr; do
+      cmp -s "$ROOT/global/opencode/commands/$command.md" "$UPDATE_DIR/commands/$command.md"
+    done
+  fi
+done
 
 # Existing same-named skills are preserved while missing skills are installed.
 SKILL_CONFLICT_HOME="$(mktemp -d)"
@@ -94,6 +148,11 @@ rg -q 'Installed workflow skills in:' "$SKILL_CONFLICT_HOME/skills-output"
 test ! -e "$SKILL_CONFLICT_DIR/opencode.jsonc"
 test "$(<"$SKILL_CONFLICT_DIR/skills/explore/SKILL.md")" = 'user-owned skill'
 cmp -s "$ROOT/global/opencode/skills/review/SKILL.md" "$SKILL_CONFLICT_DIR/skills/review/SKILL.md"
+# A pre-existing skill must not block the full install on a fresh configuration.
+HOME="$SKILL_CONFLICT_HOME" OPENCODE_CONFIG_DIR="$SKILL_CONFLICT_DIR" make -C "$ROOT" install >"$SKILL_CONFLICT_HOME/install-output"
+cmp -s "$ROOT/global/opencode/opencode.jsonc" "$SKILL_CONFLICT_DIR/opencode.jsonc"
+test "$(<"$SKILL_CONFLICT_DIR/skills/explore/SKILL.md")" = 'user-owned skill'
+cmp -s "$ROOT/global/opencode/commands/plan.md" "$SKILL_CONFLICT_DIR/commands/plan.md"
 rm -rf "$SKILL_CONFLICT_HOME"
 
 # Commands install independently, preserve conflicts/symlinks, and are idempotent.
@@ -112,14 +171,65 @@ done
 test ! -e "$COMMAND_CONFIG_DIR/opencode.jsonc"
 test ! -e "$COMMAND_CONFIG_DIR/skills"
 
+# Full install preserves linked config/commands while adding missing skills.
+ln -s "$CORE_CONFIG" "$COMMAND_CONFIG_DIR/opencode.jsonc"
+HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$COMMAND_CONFIG_DIR" make -C "$ROOT" install >"$CORE_CONFIG_HOME/linked-install-output"
+test -L "$COMMAND_CONFIG_DIR/opencode.jsonc"
+test -L "$COMMAND_CONFIG_DIR/commands/draft-pr.md"
+test ! -e "$COMMAND_CONFIG_DIR/missing-target"
+test "$(<"$COMMAND_CONFIG_DIR/commands/plan.md")" = 'user-owned command'
+cmp -s "$CORE_CONFIG_HOME/before-reinstall" "$CORE_CONFIG"
+cmp -s "$ROOT/global/opencode/skills/explore/SKILL.md" "$COMMAND_CONFIG_DIR/skills/explore/SKILL.md"
+
 # A non-directory commands path is rejected before initializing configuration.
 BLOCKED_COMMAND_DIR="$CORE_CONFIG_HOME/blocked-commands"
 mkdir -p "$BLOCKED_COMMAND_DIR"
 printf 'not a directory\n' > "$BLOCKED_COMMAND_DIR/commands"
-for target in install install-commands; do
+for target in install install-commands update-commands; do
   if HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$BLOCKED_COMMAND_DIR" make -C "$ROOT" "$target" >"$CORE_CONFIG_HOME/command-error" 2>&1; then exit 1; fi
   rg -q 'Refusing to use non-directory OpenCode commands directory:' "$CORE_CONFIG_HOME/command-error"
   test ! -e "$BLOCKED_COMMAND_DIR/opencode.jsonc"
+done
+
+# Unsafe update destinations fail before any managed files are changed.
+for component in skills commands; do
+  for obstruction in file-link dangling-link directory parent-link parent-file; do
+    UPDATE_DIR="$CORE_CONFIG_HOME/unsafe-$component-$obstruction"
+    mkdir -p "$UPDATE_DIR/$component"
+    printf 'external contents\n' > "$UPDATE_DIR/external"
+    if [ "$component" = skills ]; then
+      mkdir -p "$UPDATE_DIR/skills/explore" "$UPDATE_DIR/skills/review"
+      FIRST="$UPDATE_DIR/skills/explore/SKILL.md"
+      BLOCKED="$UPDATE_DIR/skills/review/SKILL.md"
+      PARENT="$UPDATE_DIR/skills/review"
+    else
+      FIRST="$UPDATE_DIR/commands/plan.md"
+      BLOCKED="$UPDATE_DIR/commands/draft-pr.md"
+      PARENT="$UPDATE_DIR/commands"
+    fi
+    printf 'must stay unchanged\n' > "$FIRST"
+    case "$obstruction" in
+      file-link) ln -s "$UPDATE_DIR/external" "$BLOCKED" ;;
+      dangling-link) ln -s "$UPDATE_DIR/missing" "$BLOCKED" ;;
+      directory) mkdir "$BLOCKED" ;;
+      parent-link)
+        mv "$PARENT" "$UPDATE_DIR/linked-directory"
+        ln -s "$UPDATE_DIR/linked-directory" "$PARENT"
+        ;;
+      parent-file)
+        mv "$PARENT" "$UPDATE_DIR/saved-directory"
+        printf 'not a directory\n' > "$PARENT"
+        ;;
+    esac
+    if HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$UPDATE_DIR" make -C "$ROOT" "update-$component" >"$CORE_CONFIG_HOME/update-error" 2>&1; then exit 1; fi
+    if [ "$component" = commands ] && [ "$obstruction" = parent-file ]; then
+      FIRST="$UPDATE_DIR/saved-directory/plan.md"
+    fi
+    test "$(<"$FIRST")" = 'must stay unchanged'
+    test "$(<"$UPDATE_DIR/external")" = 'external contents'
+    test ! -e "$UPDATE_DIR/missing"
+    test ! -e "$UPDATE_DIR/opencode.jsonc"
+  done
 done
 
 # A non-directory configuration path is rejected before creating directories.

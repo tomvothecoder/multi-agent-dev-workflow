@@ -70,7 +70,7 @@ For an existing installation, install the commands without changing the configur
 make install-commands
 ```
 
-This copies missing files from `global/opencode/commands/` into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/commands/`. Existing same-named commands (including symlinks) are preserved. Review and merge future template changes manually. `/plan` overrides OpenCode's built-in command of the same name, if present.
+This copies missing files from `global/opencode/commands/` into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/commands/`. Existing same-named commands (including symlinks) are preserved. Use `make update-commands` to replace the four workflow commands with the latest repository templates; this overwrites local edits. `/plan` overrides OpenCode's built-in command of the same name, if present.
 
 ## Providers
 
@@ -94,13 +94,13 @@ Run `make update-opencode` to upgrade OpenCode, refresh its model catalog, and s
 ## Setup
 
 1. Install OpenCode using its [official instructions](https://opencode.ai/).
-2. Initialize the user-owned configuration only if it does not already exist:
+2. Install the configuration, skills, and commands (safe to rerun):
 
    ```bash
    make install
    ```
 
-   This copies `global/opencode/opencode.jsonc`, the two skills, and the four prompt commands to `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It never replaces an existing configuration, same-named skill, or command.
+    This copies missing configuration, skills, and prompt commands to `${OPENCODE_CONFIG_DIR:-~/.config/opencode}`. It never replaces an existing configuration, same-named skill, or command. An existing configuration does not prevent missing skills or commands from being installed.
 
 3. Authenticate the providers above and start OpenCode.
 
@@ -109,6 +109,16 @@ Existing user-owned configuration remains yours. Merge the three-agent section d
 ```bash
 make install-skills
 ```
+
+To explicitly refresh installed workflow templates:
+
+```bash
+make update-skills           # Refresh explore/review SKILL.md files
+make update-commands         # Refresh the four workflow commands
+make update-skills-commands  # Refresh both
+```
+
+These update targets also install missing templates. They **overwrite local edits** to the managed `SKILL.md` files and command templates; review or back up customizations first. They preserve unrelated skills, commands, extra files inside skill directories, and `opencode.jsonc`. Symlinked or incompatible managed destinations are rejected rather than followed or replaced. `update-skills` updates only the two managed `SKILL.md` files, not entire skill directories. `update-opencode` remains independent of these workflow-template updates.
 
 To receive updates to the primary response rules in an existing installation, review and merge the two primary prompts into your user-owned configuration. Alternatively, `make update-agents` refreshes the whole `agent` section from the template (after refreshing models); it **replaces all customizations in the user-owned agent section**, not just these prompts. Review your changes before running it. `make install` copies the updated prompts only when no configuration exists yet.
 
@@ -125,7 +135,7 @@ make update-permissions
 make update-agents-md
 ```
 
-`make update-opencode-sections` is a compatibility alias for `make update-opencode`, including the upgrade and model refresh. `make update-agents-md` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; when `provider.livai` is absent, its model section is skipped. All other settings in your `opencode.jsonc` remain unchanged.
+`make update-opencode` upgrades OpenCode, refreshes models, and syncs all three configuration sections. `make update-agents-md` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; when `provider.livai` is absent, its model section is skipped. All other settings in your `opencode.jsonc` remain unchanged.
 
 ## Optional NERSC filesystem rules
 
@@ -147,6 +157,6 @@ make test
 - `global/opencode/opencode.jsonc`: user-owned native OpenCode template.
 - `global/opencode/skills/`: the two focused OpenCode skills.
 - `global/opencode/commands/`: issue planning, implementation, optional review/fix, and human-gated draft PR prompts.
-- `global/install-opencode-config.sh`: safe one-time config initializer.
+- `global/install-opencode-config.sh`: repeatable missing-component installer and explicit skill/command updater.
 - `profiles/nersc/`: optional filesystem instruction profile.
 - `test/`: configuration and lifecycle checks.
