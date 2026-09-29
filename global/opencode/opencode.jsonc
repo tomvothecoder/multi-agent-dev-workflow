@@ -133,7 +133,7 @@
     "reviewer": {
       "description": "Independently reviews substantial completed changes without editing them.",
       "mode": "subagent",
-      "model": "github-copilot/claude-opus-5-5",
+      "model": "github-copilot/claude-opus-5.5",
       "permission": {
         "edit": "deny",
         "bash": { "*": "deny", "git status*": "allow", "git diff*": "allow", "git show*": "allow" },
