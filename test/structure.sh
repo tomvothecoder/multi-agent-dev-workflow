@@ -19,7 +19,12 @@ for command in plan implement review-again draft-pr; do
   rg -q '^description: ' "$prompt"
   rg -Fq 'issue #$1' "$prompt"
   rg -Fq 'ask for' "$prompt"
-  rg -Fq 'Require a bare positive integer issue number' "$prompt"
+  rg -Fxq 'Issue-number argument: "$1"' "$prompt"
+  rg -Fq 'Validate only the issue-number argument above, not this entire prompt.' "$prompt"
+  rg -Fq 'It must contain only decimal digits and represent an integer greater than zero.' "$prompt"
+  rg -Fq 'If valid, use it as the issue number and proceed without asking again.' "$prompt"
+  rg -Fq 'If missing or invalid, ask for a bare positive integer and stop.' "$prompt"
+  if rg -Fq 'Require a bare positive integer issue number' "$prompt"; then exit 1; fi
   # Retain the selected primary rather than invoking a read-only subagent.
   if rg -q '^(agent|subtask|model):' "$prompt"; then exit 1; fi
 done
