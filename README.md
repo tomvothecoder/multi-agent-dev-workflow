@@ -56,11 +56,14 @@ Use these commands with a bare issue number (for example, `42`, not `#42`):
 | Command | Stage |
 | --- | --- |
 | `/plan 42` | Read the issue and repository instructions, inspect code, and draft a plan. No edits; stops for approval. |
+| `/export-plan 42` | Save an existing conversation plan to `docs/github-issues/<branch-slug>/plan.md`. Exports only; does not approve implementation. |
 | `/implement 42` | Implement the approved plan available in the conversation, update tests/docs, and run quality checks. |
 | `/review-again 42` | Optional primary-agent review of the actual changes, followed by confirmed fixes and checks. |
 | `/draft-pr 42` | Explicit human gate: commit intended changes, push, and open a draft PR using the repository template. |
 
 Approve the plan before invoking `/implement`. Invoke `/draft-pr` only after reviewing the completed work and validation; the earlier stages never commit, push, or open a PR. The draft remains open for human review, with no automatic merge. These are prompt instructions, not a technical permission sandbox.
+
+`/export-plan` uses the current branch, removes its first slash-delimited prefix (such as `feature/` or `devops/`), and replaces any remaining slashes with hyphens. For example, `feature/add-login` exports to `docs/github-issues/add-login/plan.md`, and `devops/ci/cache` exports to `docs/github-issues/ci-cache/plan.md`. The issue number identifies the plan and appears in its title, not in the directory name. A branch without a slash is used unchanged. The command requires an existing plan for that issue, stops on detached HEAD or unsafe paths, and asks before overwriting different content. `/plan` remains read-only; invoke `/export-plan` separately to save its output.
 
 Commands use the currently selected agent. Select `livai-primary` or `primary`; the read-only `reviewer` cannot implement fixes or publish a PR. `/review-again` is a user-requested direct review/fix pass, not another delegated reviewer invocation. GitHub operations require `gh` authentication and repository access.
 
@@ -70,7 +73,7 @@ For an existing installation, install the commands without changing the configur
 make install-commands
 ```
 
-This copies missing files from `global/opencode/commands/` into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/commands/`. Existing same-named commands (including symlinks) are preserved. Use `make update-commands` to replace the four workflow commands with the latest repository templates; this overwrites local edits. `/plan` overrides OpenCode's built-in command of the same name, if present.
+This copies missing files from `global/opencode/commands/` into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/commands/`. Existing same-named commands (including symlinks) are preserved. Use `make update-commands` to replace the five workflow commands with the latest repository templates; this overwrites local edits. `/plan` overrides OpenCode's built-in command of the same name, if present.
 
 ## Providers
 
@@ -114,7 +117,7 @@ To explicitly refresh installed workflow templates:
 
 ```bash
 make update-skills           # Refresh explore/review SKILL.md files
-make update-commands         # Refresh the four workflow commands
+make update-commands         # Refresh the five workflow commands
 make update-skills-commands  # Refresh both
 ```
 
@@ -156,7 +159,7 @@ make test
 
 - `global/opencode/opencode.jsonc`: user-owned native OpenCode template.
 - `global/opencode/skills/`: the two focused OpenCode skills.
-- `global/opencode/commands/`: issue planning, implementation, optional review/fix, and human-gated draft PR prompts.
+- `global/opencode/commands/`: issue planning, plan export, implementation, optional review/fix, and human-gated draft PR prompts.
 - `global/install-opencode-config.sh`: repeatable missing-component installer and explicit skill/command updater.
 - `profiles/nersc/`: optional filesystem instruction profile.
 - `test/`: configuration and lifecycle checks.

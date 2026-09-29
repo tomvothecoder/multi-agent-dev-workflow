@@ -10,7 +10,7 @@ SKILL_DESTINATION_DIR="$OPENCODE_CONFIG_DIR/skills"
 SKILLS=(explore review)
 COMMAND_SOURCE_DIR="$ROOT/opencode/commands"
 COMMAND_DESTINATION_DIR="$OPENCODE_CONFIG_DIR/commands"
-COMMANDS=(plan implement review-again draft-pr)
+COMMANDS=(plan export-plan implement review-again draft-pr)
 MODE="${1:-all}"
 UPDATE=0
 case "$MODE" in

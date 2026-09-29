@@ -26,7 +26,7 @@ test ! -L "$CORE_CONFIG"
 rg -Fq "OpenCode configuration: $CORE_CONFIG" "$CORE_CONFIG_HOME/install-output"
 rg -Fq "OpenCode instructions path: $CORE_CONFIG_DIR/AGENTS.md" "$CORE_CONFIG_HOME/install-output"
 cmp -s "$ROOT/global/opencode/opencode.jsonc" "$CORE_CONFIG"
-for command in plan implement review-again draft-pr; do
+for command in plan export-plan implement review-again draft-pr; do
   cmp -s "$ROOT/global/opencode/commands/$command.md" "$CORE_CONFIG_DIR/commands/$command.md"
 done
 for skill in explore review; do
@@ -79,6 +79,7 @@ rg -Fq "Skipped livai-models because provider.livai is not configured: $CORE_CON
 cp "$CORE_CONFIG" "$CORE_CONFIG_HOME/before-reinstall"
 printf 'custom skill\n' > "$CORE_CONFIG_DIR/skills/explore/SKILL.md"
 printf 'custom command\n' > "$CORE_CONFIG_DIR/commands/plan.md"
+printf 'custom export command\n' > "$CORE_CONFIG_DIR/commands/export-plan.md"
 rm -r "$CORE_CONFIG_DIR/skills/review"
 rm "$CORE_CONFIG_DIR/commands/implement.md"
 for pass in 1 2; do
@@ -88,6 +89,7 @@ rg -q 'Preserved existing user-owned OpenCode configuration:' "$CORE_CONFIG_HOME
 cmp -s "$CORE_CONFIG_HOME/before-reinstall" "$CORE_CONFIG"
 test "$(<"$CORE_CONFIG_DIR/skills/explore/SKILL.md")" = 'custom skill'
 test "$(<"$CORE_CONFIG_DIR/commands/plan.md")" = 'custom command'
+test "$(<"$CORE_CONFIG_DIR/commands/export-plan.md")" = 'custom export command'
 cmp -s "$ROOT/global/opencode/skills/review/SKILL.md" "$CORE_CONFIG_DIR/skills/review/SKILL.md"
 cmp -s "$ROOT/global/opencode/commands/implement.md" "$CORE_CONFIG_DIR/commands/implement.md"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" install-skills >"$CORE_CONFIG_HOME/skills-output"
@@ -111,7 +113,7 @@ done
 for skill in explore review; do
   cmp -s "$ROOT/global/opencode/skills/$skill/SKILL.md" "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
 done
-for command in plan implement review-again draft-pr; do
+for command in plan export-plan implement review-again draft-pr; do
   cmp -s "$ROOT/global/opencode/commands/$command.md" "$CORE_CONFIG_DIR/commands/$command.md"
 done
 cmp -s "$CORE_CONFIG_HOME/before-reinstall" "$CORE_CONFIG"
@@ -131,7 +133,7 @@ for component in skills commands; do
     done
   else
     test ! -e "$UPDATE_DIR/skills"
-    for command in plan implement review-again draft-pr; do
+    for command in plan export-plan implement review-again draft-pr; do
       cmp -s "$ROOT/global/opencode/commands/$command.md" "$UPDATE_DIR/commands/$command.md"
     done
   fi
@@ -165,7 +167,7 @@ HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$COMMAND_CONFIG_DIR" make -C "$ROO
 test "$(<"$COMMAND_CONFIG_DIR/commands/plan.md")" = 'user-owned command'
 test -L "$COMMAND_CONFIG_DIR/commands/draft-pr.md"
 test ! -e "$COMMAND_CONFIG_DIR/missing-target"
-for command in implement review-again; do
+for command in export-plan implement review-again; do
   cmp -s "$ROOT/global/opencode/commands/$command.md" "$COMMAND_CONFIG_DIR/commands/$command.md"
 done
 test ! -e "$COMMAND_CONFIG_DIR/opencode.jsonc"

@@ -12,7 +12,7 @@ for skill in explore review; do
   rg -q "^name: $skill$" "$ROOT/global/opencode/skills/$skill/SKILL.md"
 done
 test ! -e "$ROOT/profiles/nersc/nersc-filesystem.md"
-for command in plan implement review-again draft-pr; do
+for command in plan export-plan implement review-again draft-pr; do
   prompt="$ROOT/global/opencode/commands/$command.md"
   test -f "$prompt"
   test "$(rg -c '^---$' "$prompt")" = 2
@@ -29,6 +29,21 @@ for command in plan implement review-again draft-pr; do
   if rg -q '^(agent|subtask|model):' "$prompt"; then exit 1; fi
 done
 rg -Fq 'Do not modify files or run mutating commands.' "$ROOT/global/opencode/commands/plan.md"
+for instruction in \
+  'git rev-parse --show-toplevel' \
+  'git symbolic-ref --quiet --short HEAD' \
+  'removing the first slash-delimited prefix' \
+  'Replace any remaining `/` separators with `-`.' \
+  'docs/github-issues/<branch-slug>/plan.md' \
+  'Do not prepend the issue number.' \
+  'If no plan is available for this issue' \
+  'If any component is a symlink' \
+  'ask for explicit overwrite approval and stop' \
+  'Compare an existing plan.md with the exact Markdown that would be written.' \
+  "following the repository's plan format if one exists." \
+  'export is not permission to implement.'; do
+  rg -Fq "$instruction" "$ROOT/global/opencode/commands/export-plan.md"
+done
 rg -Fq 'approved plan' "$ROOT/global/opencode/commands/implement.md"
 for command in implement review-again; do
   rg -Fq 'Do not commit, push, or open a PR' "$ROOT/global/opencode/commands/$command.md"
