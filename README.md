@@ -49,21 +49,28 @@ For non-trivial plans, use these headings in order:
 
 After implementation, report **Result** (what changed and the outcome), **Validation** (checks run and their results, plus relevant checks not run and why), and **Remaining issues** (omit if none). State clearly when implementation is incomplete. A plan-only response must not use this results format or imply that checks ran.
 
-## Issue prompt commands
+## Workflow commands
 
-Use these commands with a bare issue number (for example, `42`, not `#42`):
+Only `/implement` requires an explicit issue number (for example, `42`, not `#42`). `/plan`, `/review-again`, and `/draft-pr` derive the current issue from chat context; if it is missing or ambiguous, they report that and stop without asking for a number. `/export-plan` just uses the latest generated plan.
 
 | Command | Stage |
 | --- | --- |
-| `/plan 42` | Read the issue and repository instructions, inspect code, and draft a plan. No edits; stops for approval. |
-| `/export-plan 42` | Save an existing conversation plan to `docs/github-issues/<branch-slug>/plan.md`. Exports only; does not approve implementation. |
-| `/implement 42` | Implement the approved plan available in the conversation, update tests/docs, and run quality checks. |
-| `/review-again 42` | Optional primary-agent review of the actual changes, followed by confirmed fixes and checks. |
-| `/draft-pr 42` | Explicit human gate: commit intended changes, push, and open a draft PR using the repository template. |
+| `/plan` | Read the issue from chat context, inspect code, and draft a plan. No edits; stops for approval. |
+| `/export-plan` | Save the latest conversation plan to `docs/github-issues/<branch-slug>/plan.md` at the current repository root. Exports only; does not approve implementation. |
+| `/implement 42 [additional instructions]` | Implement the approved conversation plan with any additional input, update tests/docs, and run checks. Asks for a number only if missing or invalid. |
+| `/review-again` | Review the actual changes against the current issue, fix confirmed problems, and rerun checks. |
+| `/draft-pr` | Commit intended changes, push, and open a draft PR for the current issue using the repository template. |
+
+For `/implement`, only the first input token is the issue number. Everything after it, including text below the command, is additional user input—not part of issue-number validation. For example:
+
+```text
+/implement 42 Keep the public API unchanged.
+Focus on the cache invalidation fix and add a regression test.
+```
 
 Approve the plan before invoking `/implement`. Invoke `/draft-pr` only after reviewing the completed work and validation; the earlier stages never commit, push, or open a PR. The draft remains open for human review, with no automatic merge. These are prompt instructions, not a technical permission sandbox.
 
-`/export-plan` uses the current branch, removes its first slash-delimited prefix (such as `feature/` or `devops/`), and replaces any remaining slashes with hyphens. For example, `feature/add-login` exports to `docs/github-issues/add-login/plan.md`, and `devops/ci/cache` exports to `docs/github-issues/ci-cache/plan.md`. The issue number identifies the plan and appears in its title, not in the directory name. A branch without a slash is used unchanged. The command requires an existing plan for that issue, stops on detached HEAD or unsafe paths, and asks before overwriting different content. `/plan` remains read-only; invoke `/export-plan` separately to save its output.
+`/export-plan` saves the latest generated plan unchanged, creates missing directories, and replaces any previous export. It uses the current branch, removes its first slash-delimited prefix (such as `feature/` or `devops/`), and replaces any remaining slashes with hyphens. For example, `feature/add-login` exports to `docs/github-issues/add-login/plan.md`, and `devops/ci/cache` exports to `docs/github-issues/ci-cache/plan.md`. A branch without a slash is used unchanged. If there is no plan or the repository/branch cannot be determined, it stops without exporting. `/plan` remains read-only; invoke `/export-plan` separately to save its output.
 
 Commands use the currently selected agent. Select `livai-primary` or `primary`; the read-only `reviewer` cannot implement fixes or publish a PR. `/review-again` is a user-requested direct review/fix pass, not another delegated reviewer invocation. GitHub operations require `gh` authentication and repository access.
 

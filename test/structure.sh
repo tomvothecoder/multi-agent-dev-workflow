@@ -17,41 +17,53 @@ for command in plan export-plan implement review-again draft-pr; do
   test -f "$prompt"
   test "$(rg -c '^---$' "$prompt")" = 2
   rg -q '^description: ' "$prompt"
-  rg -Fq 'issue #$1' "$prompt"
-  rg -Fq 'ask for' "$prompt"
-  rg -Fxq 'Issue-number argument: "$1"' "$prompt"
-  rg -Fq 'Validate only the issue-number argument above, not this entire prompt.' "$prompt"
-  rg -Fq 'It must contain only decimal digits and represent an integer greater than zero.' "$prompt"
-  rg -Fq 'If valid, use it as the issue number and proceed without asking again.' "$prompt"
-  rg -Fq 'If missing or invalid, ask for a bare positive integer and stop.' "$prompt"
-  if rg -Fq 'Require a bare positive integer issue number' "$prompt"; then exit 1; fi
   # Retain the selected primary rather than invoking a read-only subagent.
   if rg -q '^(agent|subtask|model):' "$prompt"; then exit 1; fi
+  # Only implement takes an explicit issue number and additional user input.
+  if [ "$command" = implement ]; then
+    rg -Fxq 'User input: $ARGUMENTS' "$prompt"
+    rg -Fq 'Use the first token of the user input as an issue number containing only decimal digits and greater than zero.' "$prompt"
+    rg -Fq 'If missing or invalid, ask for an issue number and stop.' "$prompt"
+    rg -Fq 'Treat all remaining input, including multiline text and instructions below the command, as additional user instructions, not part of the issue number.' "$prompt"
+    rg -Fq 'with the additional user instructions.' "$prompt"
+    rg -Fq 'Keep changes as minimal and clean as possible to achieve the task; avoid unrelated refactors.' "$prompt"
+  else
+    if rg -q '\$[0-9]|\$ARGUMENTS|Issue-number argument|bare positive integer' "$prompt"; then exit 1; fi
+    if [ "$command" != export-plan ]; then
+      rg -Fq 'Use the current issue from chat context.' "$prompt"
+      rg -Fq 'If it is missing or ambiguous, report that and stop; do not ask for an issue number.' "$prompt"
+    fi
+  fi
 done
 rg -Fq 'Do not modify files or run mutating commands.' "$ROOT/global/opencode/commands/plan.md"
 for instruction in \
+  'Save the latest plan generated in this conversation as Markdown, preserving its wording and structure.' \
+  'No arguments are required.' \
+  'If there is no plan, report that and stop without writing files.' \
   'git rev-parse --show-toplevel' \
   'git symbolic-ref --quiet --short HEAD' \
+  'If either cannot be determined, report that and stop.' \
   'removing the first slash-delimited prefix' \
   'Replace any remaining `/` separators with `-`.' \
+  'Leave branch names without a slash unchanged.' \
   'docs/github-issues/<branch-slug>/plan.md' \
-  'Do not prepend the issue number.' \
-  'If no plan is available for this issue' \
-  'If any component is a symlink' \
-  'ask for explicit overwrite approval and stop' \
-  'Compare an existing plan.md with the exact Markdown that would be written.' \
-  "following the repository's plan format if one exists." \
-  'export is not permission to implement.'; do
+  'relative to the repository root.' \
+  'Create missing parent directories and replace any existing plan.md without asking for overwrite approval.' \
+  'Do not write through symlinks or outside the repository.' \
+  'Report the saved repository-relative path and stop.' \
+  'Only export the plan; do not implement it, run tests, commit, push, or open a PR.'; do
   rg -Fq "$instruction" "$ROOT/global/opencode/commands/export-plan.md"
 done
 rg -Fq 'approved plan' "$ROOT/global/opencode/commands/implement.md"
 for command in implement review-again; do
   rg -Fq 'Do not commit, push, or open a PR' "$ROOT/global/opencode/commands/$command.md"
 done
-rg -Fq 'explicit human gate' "$ROOT/global/opencode/commands/draft-pr.md"
-rg -Fq 'draft PR using the repository' "$ROOT/global/opencode/commands/draft-pr.md"
+rg -Fq 'This command authorizes committing, pushing, and opening a draft PR.' "$ROOT/global/opencode/commands/draft-pr.md"
+rg -Fq 'draft PR using the repository template.' "$ROOT/global/opencode/commands/draft-pr.md"
 rg -Fq 'do not merge' "$ROOT/global/opencode/commands/draft-pr.md"
-rg -Fq 'Do not publish directly to the default or base branch.' "$ROOT/global/opencode/commands/draft-pr.md"
+rg -Fq 'Stop if the work is incomplete, relevant checks have not passed, or HEAD is detached or on the default/PR base branch.' "$ROOT/global/opencode/commands/draft-pr.md"
+rg -Fq 'Push without force-pushing' "$ROOT/global/opencode/commands/draft-pr.md"
+rg -Fq 'Commit only intended changes, never secrets; skip empty commits.' "$ROOT/global/opencode/commands/draft-pr.md"
 test ! -e "$ROOT/global/opencode/oh-my-opencode-slim.jsonc"
 test ! -e "$ROOT/global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
 test ! -e "$ROOT/global/backup-global-agent-workflow.sh"
