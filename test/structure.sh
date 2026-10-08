@@ -252,8 +252,15 @@ printf '%s\n' "$*" >> "$UPDATE_TEST_LOG"
 test "${UPDATE_FAIL_STEP:-}" != "$*"
 EOF
 chmod +x "$CHECK_DIR/global/sync-opencode-agents-md.sh" "$CHECK_DIR/global/install-opencode-config.sh"
+cat > "$CHECK_DIR/global/install-caveman.sh" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+test "$*" = update-if-installed
+printf 'update-caveman\n' >> "$UPDATE_TEST_LOG"
+test "${UPDATE_FAIL_STEP:-}" != update-caveman
+EOF
 # A parallel outer Make must still execute each update exactly once, in order.
-steps=(upgrade 'models --refresh' sync agents-md update-skills update-commands)
+steps=(upgrade 'models --refresh' sync agents-md update-skills update-commands update-caveman)
 : > "$CHECK_DIR/log"
 PATH="$CHECK_DIR:$PATH" UPDATE_TEST_LOG="$CHECK_DIR/log" make -j4 -C "$CHECK_DIR" update-all >/dev/null
 printf '%s\n' "${steps[@]}" > "$CHECK_DIR/expected"

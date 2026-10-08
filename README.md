@@ -150,7 +150,7 @@ Run every update with one command:
 make update-all
 ```
 
-This runs `update-opencode`, `update-agents-md`, `update-skills`, and `update-commands` sequentially, stopping on the first failure even with parallel Make enabled. `update-opencode` already covers the model refresh and LivAI models, agents, and permissions, so these updates are not repeated. Review or back up customizations first: this replaces the managed configuration sections, `AGENTS.md`, skills, and commands. It does not run installation targets or configure Lazygit.
+This runs `update-opencode`, `update-agents-md`, `update-skills`, and `update-commands` sequentially, then refreshes Caveman only if installed by this repository. It stops on the first failure even with parallel Make enabled. `update-opencode` already covers the model refresh and LivAI models, agents, and permissions, so these updates are not repeated. Review or back up customizations first: this replaces the managed configuration sections, `AGENTS.md` (preserving its Caveman activation block), skills, and commands. It does not enable optional integrations or configure Lazygit.
 
 `make update-agents` runs `make refresh-models` before updating configuration. If the model refresh fails, the configuration update stops.
 
@@ -164,6 +164,40 @@ make update-agents-md
 ```
 
 `make update-opencode` upgrades OpenCode, refreshes models, and syncs all three configuration sections. `make update-agents-md` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; when `provider.livai` is absent, its model section is skipped. All other settings in your `opencode.jsonc` remain unchanged.
+
+## Optional Caveman output styling
+
+Use the repository's minimal installer, **not** Caveman's unified installer:
+
+```bash
+make install                 # If no OpenCode configuration exists yet
+make install-caveman
+# Restart OpenCode and start a new session.
+make update-caveman          # Refresh only this integration
+make uninstall-caveman       # Remove only this integration
+```
+
+Setup needs Ruby 2.6+ (standard library only), curl, and an existing OpenCode configuration. It downloads Caveman **v3.2.0**, pinned to commit `e20f07e8152a0c0360f58c09e79d30ac94329991`, over HTTPS. Downloaded installer scripts are never executed. The plugin itself runs inside OpenCode; installing it means trusting upstream code. Review the pinned [plugin](https://github.com/JuliusBrussee/caveman/blob/e20f07e8152a0c0360f58c09e79d30ac94329991/src/plugins/opencode/plugin.js) before enabling it. Bumping the pin is a repository change, not an automatic upgrade to `latest`.
+
+Only the four native plugin files, `skills/caveman/SKILL.md`, one plugin registration, and a marker-fenced instruction block are installed. No Cavecrew agents, slash-command files, extra modes, CLI, proxy, MCP, telemetry setup, provider routing, or credentials are added. The plugin reads the ruleset directly; existing skill permissions stay unchanged. It adds response-style system instructions but does not compress or rewrite prompts, tool results, or history. This works independently of provider choice, including LivAI and Copilot.
+
+Standard Caveman prose is the default unless existing upstream Caveman mode settings override it. This minimal installation supplies only the standard ruleset, not alternate modes. Primary and subagent output should stay concise while retaining required headings, requested detail, technical meaning, and exact code/commands. Output styling is a model instruction, not a guarantee. Upstream uses shared machine-wide mode state in OpenCode, and static global instructions remain active for subagents; use `make uninstall-caveman` for reliable global deactivation rather than relying on a per-session toggle.
+
+`OPENCODE_CONFIG_DIR` must match the plugin's runtime path: `${XDG_CONFIG_HOME:-$HOME/.config}/opencode`. For a custom location, use the same environment for setup, updates, **and OpenCode**:
+
+```bash
+export XDG_CONFIG_HOME="$HOME/custom-config"
+export OPENCODE_CONFIG_DIR="$XDG_CONFIG_HOME/opencode"
+make install
+make install-caveman
+opencode
+```
+
+Setup requires exactly one `opencode.jsonc` or `opencode.json`, preserves comments and unrelated settings, and saves a private first-install `.caveman-config-backup`. `.caveman-install.json` records ownership and digests. Repeat installation is a no-op. Updates and uninstall refuse missing/modified managed files, changed activation blocks, symlinks, or unowned conflicts; restore the recorded version before retrying. Existing upstream installs are not silently adopted. Unrelated and extra files are preserved. Uninstall keeps the configuration backup and runtime history, removes known mode flags, and never touches other agents. File writes are atomic with rollback on ordinary write failures, not a crash-proof transaction; do not run OpenCode during lifecycle changes.
+
+`make update-agents-md` preserves exactly one valid Caveman instruction block; Ruby is required only when that block exists. `make update-all` refreshes Caveman only when its repository ownership record exists, with no new prerequisites or path restrictions for users who never installed it. `make install` remains opt-in with respect to Caveman. A killed lifecycle process may leave `.caveman-install.lock/`; remove that directory only after confirming no lifecycle command is running.
+
+After restarting, test a concise explanation, a code/command response, and a request for detailed prose with both primary and subagent workflows.
 
 ## Optional Lazygit setup
 
@@ -203,6 +237,9 @@ This profile is independent of the agent configuration.
 make test
 # Focused installer/configuration checks (mocked downloads; no host install):
 make lazygit-test
+make caveman-test
+# Optional: actual pinned downloads + isolated plugin hooks (requires Node.js):
+CAVEMAN_UPSTREAM_TEST=1 make caveman-test
 ```
 
 ## Repository layout
@@ -212,5 +249,6 @@ make lazygit-test
 - `global/opencode/commands/`: issue planning, plan export, implementation, optional review/fix, and human-gated draft PR prompts.
 - `global/install-opencode-config.sh`: repeatable missing-component installer and explicit skill/command updater.
 - `global/install-lazygit.sh`, `global/setup-lazygit.sh`, `global/setup-lazygit-config.rb`: optional Lazygit installation and comment-preserving worktree configuration.
+- `global/install-caveman.sh`, `global/manage-caveman.rb`: optional, scoped Caveman output-plugin lifecycle and instruction preservation.
 - `profiles/nersc/`: optional filesystem instruction profile.
 - `test/`: configuration and lifecycle checks.

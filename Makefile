@@ -10,6 +10,8 @@ help:
 		'  install-commands      Install missing workflow commands without changing the config' \
 		'  install-lazygit       Install Lazygit (Linux pin: LAZYGIT_VERSION=0.66.0)' \
 		'  setup-lazygit         Suggest ~/worktrees for new Lazygit worktrees' \
+		'  install-caveman       Install optional Caveman output-only styling' \
+		'  uninstall-caveman     Remove only the managed Caveman integration' \
 		'' 'Updates:' \
 		'  update-all            Run all updates in order, stopping on failure' \
 		'  update-opencode       Upgrade OpenCode, refresh models, and sync config' \
@@ -21,12 +23,14 @@ help:
 		'  update-skills         Replace managed SKILL.md files from the templates' \
 		'  update-commands       Replace managed workflow command templates' \
 		'  update-skills-commands Update both workflow skills and commands' \
+		'  update-caveman        Refresh the managed Caveman output integration' \
 		'' 'Optional profiles:' \
 		'  install-nersc-rules   Install the optional NERSC filesystem rules profile' \
 		'  uninstall-nersc-rules Remove the NERSC filesystem rules profile' \
 		'' 'Validation:' \
 		'  test                  Run lifecycle and structure checks' \
 		'  lazygit-test          Run isolated Lazygit installer and config checks' \
+		'  caveman-test          Run isolated Caveman lifecycle checks' \
 		'  structure-test        Validate the OpenCode template'
 
 # --- Installation -------------------------------------------------------------
@@ -50,6 +54,20 @@ install-lazygit:
 setup-lazygit:
 	@./global/setup-lazygit.sh
 
+.PHONY: install-caveman update-caveman uninstall-caveman caveman-test
+
+install-caveman:
+	@bash ./global/install-caveman.sh install
+
+update-caveman:
+	@bash ./global/install-caveman.sh update
+
+uninstall-caveman:
+	@bash ./global/install-caveman.sh uninstall
+
+caveman-test:
+	@ruby ./test/caveman.rb
+
 # --- Updates ------------------------------------------------------------------
 
 .PHONY: update-all update-opencode refresh-models update-livai-models update-agents update-permissions update-agents-md update-skills update-commands update-skills-commands
@@ -59,6 +77,7 @@ update-all:
 	@$(MAKE) update-agents-md
 	@$(MAKE) update-skills
 	@$(MAKE) update-commands
+	@bash ./global/install-caveman.sh update-if-installed
 
 update-opencode:
 	@opencode upgrade
@@ -106,6 +125,7 @@ test:
 	@./test/lifecycle.sh
 	@./test/structure.sh
 	@./test/lazygit.sh
+	@ruby ./test/caveman.rb
 
 lazygit-test:
 	@./test/lazygit.sh

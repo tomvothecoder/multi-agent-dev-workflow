@@ -25,7 +25,11 @@ fi
 
 temporary="$(mktemp "$OPENCODE_CONFIG_DIR/.AGENTS.md.XXXXXX")"
 trap 'rm -f "$temporary"' EXIT
-cp "$TEMPLATE" "$temporary"
+if [ -f "$DESTINATION" ] && grep -Eq '<!-- caveman-(begin|end) -->' "$DESTINATION"; then
+  ruby "$ROOT/global/manage-caveman.rb" preserve-instructions "$TEMPLATE" "$DESTINATION" "$temporary"
+else
+  cp "$TEMPLATE" "$temporary"
+fi
 if [ -f "$DESTINATION" ]; then
   mode="$(stat -c %a "$DESTINATION" 2>/dev/null || stat -f %Lp "$DESTINATION")"
   chmod "$mode" "$temporary"
