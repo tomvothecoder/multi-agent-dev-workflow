@@ -190,7 +190,7 @@ make -s -C "$CHECK_DIR" > "$CHECK_DIR/help"
 for section in Installation Updates 'Optional profiles' Validation; do
   rg -Fxq "$section:" "$CHECK_DIR/help"
 done
-for target in update-skills update-commands update-skills-commands; do
+for target in update-skills update-commands update-skills-commands install-lazygit setup-lazygit lazygit-test; do
   rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"
 done
 for target in install-opencode install-opencode-config update-opencode-sections; do

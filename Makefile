@@ -8,6 +8,8 @@ help:
 		'  install               Initialize config, skills, and commands when absent' \
 		'  install-skills        Install missing workflow skills without changing the config' \
 		'  install-commands      Install missing workflow commands without changing the config' \
+		'  install-lazygit       Install Lazygit (Linux pin: LAZYGIT_VERSION=0.66.0)' \
+		'  setup-lazygit         Suggest ~/worktrees for new Lazygit worktrees' \
 		'' 'Updates:' \
 		'  update-opencode       Upgrade OpenCode, refresh models, and sync config' \
 		'  refresh-models        Refresh the OpenCode model catalog' \
@@ -23,6 +25,7 @@ help:
 		'  uninstall-nersc-rules Remove the NERSC filesystem rules profile' \
 		'' 'Validation:' \
 		'  test                  Run lifecycle and structure checks' \
+		'  lazygit-test          Run isolated Lazygit installer and config checks' \
 		'  structure-test        Validate the OpenCode template'
 
 # --- Installation -------------------------------------------------------------
@@ -37,6 +40,14 @@ install-skills:
 
 install-commands:
 	@./global/install-opencode-config.sh commands
+
+.PHONY: install-lazygit setup-lazygit
+
+install-lazygit:
+	@./global/install-lazygit.sh
+
+setup-lazygit:
+	@./global/setup-lazygit.sh
 
 # --- Updates ------------------------------------------------------------------
 
@@ -82,11 +93,15 @@ uninstall-nersc-rules:
 
 # --- Validation ---------------------------------------------------------------
 
-.PHONY: test structure-test
+.PHONY: test structure-test lazygit-test
 
 test:
 	@./test/lifecycle.sh
 	@./test/structure.sh
+	@./test/lazygit.sh
+
+lazygit-test:
+	@./test/lazygit.sh
 
 structure-test:
 	@./test/structure.sh

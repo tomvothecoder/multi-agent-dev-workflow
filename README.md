@@ -155,6 +155,29 @@ make update-agents-md
 
 `make update-opencode` upgrades OpenCode, refreshes models, and syncs all three configuration sections. `make update-agents-md` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; when `provider.livai` is absent, its model section is skipped. All other settings in your `opencode.jsonc` remain unchanged.
 
+## Optional Lazygit setup
+
+Install Lazygit, then configure it:
+
+```bash
+make install-lazygit
+make setup-lazygit
+```
+
+On macOS, installation uses Homebrew and prints a link to its installation instructions if it is missing. On Linux, it installs the official release executable into `~/.local/bin` without sudo, checks the archive against the release's published SHA-256 checksums, and removes temporary files. Supported architectures are x86-64, ARM64, ARMv6/ARMv7 (the ARMv6 build), and 32-bit x86. Pin a Linux release for reproducibility:
+
+```bash
+make install-lazygit LAZYGIT_VERSION=0.66.0
+```
+
+Unpinned installs preserve an existing Lazygit; otherwise they fetch the latest release. A pinned Linux install preserves a matching version or replaces only a regular executable at `~/.local/bin/lazygit` after verification. It refuses to replace symlinks, incompatible files, or mismatched installations elsewhere in `PATH`. macOS version pinning is not supported. Installation reports the executable path and version. If `~/.local/bin` is not on `PATH`, follow the printed `export PATH` instructions; these scripts never edit shell configuration.
+
+Configuration requires Ruby with its standard-library `psych` YAML parser (no extra Ruby gems or Python packages). Setup queries `lazygit --print-config-dir` when advertised by the CLI; older versions fall back to `CONFIG_DIR`, then `XDG_CONFIG_HOME/lazygit`, then `~/Library/Application Support/lazygit` on macOS or `~/.config/lazygit` on Linux. It can use the newly installed `~/.local/bin/lazygit` even before `PATH` is updated. `LG_CONFIG_FILE` overrides are rejected to avoid editing an inactive file.
+
+Setup creates `config.yml` if missing and sets `worktree.defaultPath` to `~/worktrees`, preserving unrelated YAML content and comments. Repeated runs make no further changes. Invalid YAML, duplicate keys, incompatible structures, anchored worktree settings, multiline path values, and symlinked configs fail without changing the file. The updated config path is printed. **Restart Lazygit** after configuration.
+
+This setting supplies a **suggested parent directory** in Lazygit's worktree-creation prompt; it does **not** automatically append the repository name or create worktrees. To follow this repository's convention, choose a path such as `~/worktrees/my-app/feature/add-login` in that prompt.
+
 ## Optional NERSC filesystem rules
 
 ```bash
@@ -168,6 +191,8 @@ This profile is independent of the agent configuration.
 
 ```bash
 make test
+# Focused installer/configuration checks (mocked downloads; no host install):
+make lazygit-test
 ```
 
 ## Repository layout
@@ -176,5 +201,6 @@ make test
 - `global/opencode/skills/`: the two focused OpenCode skills.
 - `global/opencode/commands/`: issue planning, plan export, implementation, optional review/fix, and human-gated draft PR prompts.
 - `global/install-opencode-config.sh`: repeatable missing-component installer and explicit skill/command updater.
+- `global/install-lazygit.sh`, `global/setup-lazygit.sh`, `global/setup-lazygit-config.rb`: optional Lazygit installation and comment-preserving worktree configuration.
 - `profiles/nersc/`: optional filesystem instruction profile.
 - `test/`: configuration and lifecycle checks.
