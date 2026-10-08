@@ -113,7 +113,8 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .permission.bash["rm *"] == "deny" and
   (. as $config | ["explorer", "livai-explorer", "reviewer"] | all(. as $agent |
     $config.agent[$agent].permission.edit == "deny" and
-    $config.agent[$agent].permission.external_directory == "deny")) and
+    $config.agent[$agent].permission.external_directory == {"*":"deny","~/worktrees/**":"allow"} and
+    ($config.agent[$agent].permission.external_directory | keys_unsorted == ["*", "~/worktrees/**"]))) and
   .agent.explorer.permission.bash == "deny" and
   .agent["livai-explorer"].permission.bash == "deny" and
   .agent.reviewer.permission.bash == {"*":"deny","git status*":"allow","git diff*":"allow","git show*":"allow"} and

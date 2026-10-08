@@ -53,6 +53,8 @@ After implementation, report **Result** (what changed and the outcome), **Valida
 
 Store Git worktrees at `~/worktrees/<repo>/<branch>` (for example, `~/worktrees/my-app/feature/add-login`). The template allows `external_directory` access and `edit` operations under `~/worktrees/**`, using OpenCode's path-keyed permission objects and home-directory expansion. Catch-all defaults come first and path-specific allowances last because the last matching rule wins; other external paths still require approval, and ordinary edit defaults are unchanged.
 
+The explorer and reviewer agents also allow external-directory access under `~/worktrees/**`, while denying other external directories. Their read-only edit restrictions and existing Bash restrictions remain unchanged. Apply agent permission changes to an existing installation with `make update-agents`, then restart OpenCode.
+
 Directory access does not bypass shell permissions or agent-specific restrictions. Explorers and the reviewer retain their explicit external-directory denials and read-only edit permissions; the reviewer's restricted shell rules are unchanged. See [OpenCode permissions](https://opencode.ai/docs/permissions/) for matching and agent override semantics.
 
 ## Workflow commands

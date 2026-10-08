@@ -92,7 +92,7 @@
         "bash": "deny",
         "task": "deny",
         "skill": { "*": "deny", "explore": "allow" },
-        "external_directory": "deny",
+        "external_directory": { "*": "deny", "~/worktrees/**": "allow" },
         "webfetch": "deny",
         "websearch": "deny"
       },
@@ -123,7 +123,7 @@
         "bash": "deny",
         "task": "deny",
         "skill": { "*": "deny", "explore": "allow" },
-        "external_directory": "deny",
+        "external_directory": { "*": "deny", "~/worktrees/**": "allow" },
         "webfetch": "deny",
         "websearch": "deny"
       },
@@ -139,7 +139,7 @@
         "bash": { "*": "deny", "git status*": "allow", "git diff*": "allow", "git show*": "allow" },
         "task": "deny",
         "skill": { "*": "deny", "review": "allow" },
-        "external_directory": "deny",
+        "external_directory": { "*": "deny", "~/worktrees/**": "allow" },
         "webfetch": "deny",
         "websearch": "deny"
       },
