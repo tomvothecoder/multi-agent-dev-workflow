@@ -139,8 +139,9 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   (.agent.primary.prompt == (.agent["livai-primary"].prompt | gsub("livai-explorer"; "explorer"))) and
   (.agent.primary.prompt as $prompt | ["question or request only to review, answer without editing files", "unclear authorization to implement", "stop without editing files or running mutating commands", "explicit implementation request", "without an unnecessary approval turn", "formal plan only for non-trivial work", "Problem, Scope, Constraints and non-goals, Open questions (omit if none), Acceptance criteria, and Validation", "who must answer each open question and whether it blocks implementation", "Result (what changed and the outcome), Validation (checks run and results, plus relevant checks not run and why), and Remaining issues (omit if none)", "Never use the implementation-results format for plan-only responses"] | all(. as $phrase | $prompt | contains($phrase))) and
   (.agent.primary.prompt as $prompt | [
-    "ordered phases with dependencies and intended logical commit boundaries",
-    "use tracks only for genuinely independent workstreams",
+    "Keep plans as simple, clean, and concise as possible while remaining robust and actionable",
+    "use the fewest ordered phases needed, noting dependencies and intended logical commit boundaries briefly",
+    "Avoid repeated requirements, speculative work, unnecessary detail, and artificial tracks; retain essential risks and safeguards",
     "Keep changes minimal, clean, cohesive, and robust",
     "follow existing repository patterns and formatting conventions",
     "add or update tests for behavior changes",
