@@ -7,7 +7,7 @@ trap 'rm -rf "$TEST_DIR"' EXIT
 mkdir -p "$TEST_DIR/bin" "$TEST_DIR/home" "$TEST_DIR/tmp" "$TEST_DIR/release"
 export HOME="$TEST_DIR/home" TMPDIR="$TEST_DIR/tmp"
 # Do not see host installations of Lazygit or Homebrew.
-for tool in bash make dirname cat cp tar sha256sum chmod mktemp rm mv mkdir ls rg cmp ln ruby; do
+for tool in bash make dirname cat cp tar sha256sum chmod mktemp rm mv mkdir rmdir touch ls rg cmp ln ruby; do
   ln -s "$(command -v "$tool")" "$TEST_DIR/bin/$tool"
 done
 export PATH="$TEST_DIR/bin"
@@ -179,13 +179,24 @@ rg -Fq 'https://brew.sh/' "$TEST_DIR/output"
 # CLI directory wins over XDG; setup can use the just-installed local binary.
 cp "$TEST_DIR/release/lazygit" "$HOME/.local/bin/lazygit"
 export XDG_CONFIG_HOME="$TEST_DIR/xdg"
+test ! -e "$HOME/worktrees"
 setup_lazygit
+test -d "$HOME/worktrees"
 config="$TEST_DIR/active config/config.yml"
 test -f "$config"
 test ! -e "$XDG_CONFIG_HOME/lazygit/config.yml"
 cp "$config" "$TEST_DIR/config-before"
 setup_lazygit
 cmp "$TEST_DIR/config-before" "$config"
+# A conflicting file fails before changing the configuration.
+rmdir "$HOME/worktrees"
+touch "$HOME/worktrees"
+expect_failure setup_lazygit
+rg -Fq 'Could not create worktree directory:' "$TEST_DIR/output"
+cmp "$TEST_DIR/config-before" "$config"
+rm "$HOME/worktrees"
+setup_lazygit
+test -d "$HOME/worktrees"
 TEST_CONFIG_FAIL=1 expect_failure setup_lazygit
 LG_CONFIG_FILE=/some/config.yml expect_failure setup_lazygit
 mv "$TEST_DIR/bin/ruby" "$TEST_DIR/ruby"

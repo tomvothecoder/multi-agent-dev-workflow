@@ -24,4 +24,5 @@ else
   esac
 fi
 [[ "$config_dir" = /* ]] || fail "Expected an absolute Lazygit config directory: $config_dir"
+mkdir -p "$HOME/worktrees" || fail "Could not create worktree directory: $HOME/worktrees"
 ruby "$ROOT/setup-lazygit-config.rb" "$config_dir/config.yml"
