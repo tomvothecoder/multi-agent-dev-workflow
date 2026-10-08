@@ -19,7 +19,7 @@ for command in plan export-plan implement review-again draft-pr; do
   rg -q '^description: ' "$prompt"
   # Retain the selected primary rather than invoking a read-only subagent.
   if rg -q '^(agent|subtask|model):' "$prompt"; then exit 1; fi
-  # Only implement takes an explicit issue number and additional user input.
+  # Implement requires an issue number; plan accepts an optional task description.
   if [ "$command" = implement ]; then
     rg -Fxq 'User input: $ARGUMENTS' "$prompt"
     rg -Fq 'Use the first token of the user input as an issue number containing only decimal digits and greater than zero.' "$prompt"
@@ -27,6 +27,18 @@ for command in plan export-plan implement review-again draft-pr; do
     rg -Fq 'Treat all remaining input, including multiline text and instructions below the command, as additional user instructions, not part of the issue number.' "$prompt"
     rg -Fq 'with the additional user instructions.' "$prompt"
     rg -Fq 'Keep changes as minimal and clean as possible to achieve the task; avoid unrelated refactors.' "$prompt"
+  elif [ "$command" = plan ]; then
+    rg -Fxq 'User input: $ARGUMENTS' "$prompt"
+    for instruction in \
+      'Use the user input as the task to plan; if no input is provided, use the current task or issue from chat context.' \
+      'A GitHub issue is optional.' \
+      'If the task is missing or ambiguous, ask for clarification and stop; do not require an issue number.' \
+      'Read the issue with gh only when the task is tied to a clearly identified GitHub issue.' \
+      "For ad-hoc tasks, plan directly from the user's description without requiring GitHub access or creating an issue." \
+      'Stop for approval.'; do
+      rg -Fq "$instruction" "$prompt"
+    done
+    if rg -Fq 'If it is missing or ambiguous, report that and stop; do not ask for an issue number.' "$prompt"; then exit 1; fi
   else
     if rg -q '\$[0-9]|\$ARGUMENTS|Issue-number argument|bare positive integer' "$prompt"; then exit 1; fi
     if [ "$command" != export-plan ]; then

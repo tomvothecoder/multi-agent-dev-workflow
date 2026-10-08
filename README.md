@@ -51,15 +51,17 @@ After implementation, report **Result** (what changed and the outcome), **Valida
 
 ## Workflow commands
 
-Only `/implement` requires an explicit issue number (for example, `42`, not `#42`). `/plan`, `/review-again`, and `/draft-pr` derive the current issue from chat context; if it is missing or ambiguous, they report that and stop without asking for a number. `/export-plan` just uses the latest generated plan.
+Only `/implement` requires an explicit issue number (for example, `42`, not `#42`). `/plan` accepts an ad-hoc task description or uses the current task or issue from chat context; no GitHub issue or GitHub access is required for ad-hoc planning. If the task is missing or ambiguous, it asks for clarification and stops. `/review-again` and `/draft-pr` derive the current issue from chat context; if it is missing or ambiguous, they report that and stop without asking for a number. `/export-plan` just uses the latest generated plan.
 
 | Command | Stage |
 | --- | --- |
-| `/plan` | Read the issue from chat context, inspect code, and draft a plan. No edits; stops for approval. |
+| `/plan [task description]` | Plan an ad-hoc task or the current issue, inspecting code and reading the issue only when applicable. No edits; stops for approval. |
 | `/export-plan` | Save the latest conversation plan to `docs/github-issues/<branch-slug>/plan.md` at the current repository root. Exports only; does not approve implementation. |
 | `/implement 42 [additional instructions]` | Implement the approved conversation plan in ordered phases, update tests/docs, check and commit each logical group, then run broader validation. Asks for a number only if missing or invalid. |
 | `/review-again` | Review the actual changes against the current issue, fix confirmed problems, and rerun checks. |
 | `/draft-pr` | Commit intended changes, push, and open a draft PR for the current issue using the repository template. |
+
+For example, `/plan Add a dark mode toggle` plans directly from that description, while `/plan` uses the current task or issue already discussed in chat. Planning does not create a GitHub issue. The issue requirements for `/implement`, `/review-again`, and `/draft-pr` remain unchanged.
 
 For `/implement`, only the first input token is the issue number. Everything after it, including text below the command, is additional user input—not part of issue-number validation. For example:
 
