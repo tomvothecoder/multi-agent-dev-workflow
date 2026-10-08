@@ -239,6 +239,32 @@ scenario('unsafe paths and incompatible runtime destinations') do |root, env, _|
   assert(File.read(File.join(target, 'config')) == CONFIG)
 end
 
+scenario('symlinked home ancestors support install, sync, update, and uninstall') do |root, env, _|
+  home_alias = env['HOME'] + '-alias'
+  File.symlink(env['HOME'], home_alias)
+  xdg_alias = File.join(home_alias, '.config')
+  alias_env = env.merge('HOME' => home_alias, 'XDG_CONFIG_HOME' => xdg_alias,
+                        'OPENCODE_CONFIG_DIR' => File.join(xdg_alias, 'opencode'))
+  run(alias_env, 'install')
+  output, status = Open3.capture2e(alias_env, 'bash', File.join(ROOT, 'global/sync-opencode-agents-md.sh'))
+  assert(status.success?, output)
+  run(alias_env, 'update')
+  run(alias_env, 'update-if-installed')
+  run(alias_env, 'uninstall')
+  assert(File.symlink?(home_alias))
+  assert(!File.exist?(File.join(root, Caveman::MANIFEST)))
+end
+
+scenario('symlinked OpenCode configuration root remains protected') do |root, env, _|
+  actual_root = root + '-actual'
+  File.rename(root, actual_root)
+  File.symlink(actual_root, root)
+  before = snapshot(actual_root)
+  run(env, 'install', success: false)
+  assert(snapshot(actual_root) == before)
+  assert(File.symlink?(root))
+end
+
 scenario('malformed, ambiguous, and duplicate configuration') do |root, env, _|
   path = File.join(root, 'opencode.jsonc')
   ['{broken}', '{"plugin": [], "plugin": []}', '{"plugin": {}}'].each do |text|

@@ -183,7 +183,7 @@ Only the four native plugin files, `skills/caveman/SKILL.md`, one plugin registr
 
 Standard Caveman prose is the default unless existing upstream Caveman mode settings override it. This minimal installation supplies only the standard ruleset, not alternate modes. Primary and subagent output should stay concise while retaining required headings, requested detail, technical meaning, and exact code/commands. Output styling is a model instruction, not a guarantee. Upstream uses shared machine-wide mode state in OpenCode, and static global instructions remain active for subagents; use `make uninstall-caveman` for reliable global deactivation rather than relying on a per-session toggle.
 
-`OPENCODE_CONFIG_DIR` must match the plugin's runtime path: `${XDG_CONFIG_HOME:-$HOME/.config}/opencode`. For a custom location, use the same environment for setup, updates, **and OpenCode**:
+`OPENCODE_CONFIG_DIR` must match the plugin's runtime path: `${XDG_CONFIG_HOME:-$HOME/.config}/opencode`. Symlinked ancestors such as `/home` are supported; the OpenCode configuration directory itself and managed paths inside it must not be symlinks. For a custom location, use the same environment for setup, updates, **and OpenCode**:
 
 ```bash
 export XDG_CONFIG_HOME="$HOME/custom-config"

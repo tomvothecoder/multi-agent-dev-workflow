@@ -151,24 +151,22 @@ module Caveman
     text + (text.empty? || text.end_with?("\n\n") ? '' : "\n\n") + block + "\n"
   end
 
-  def self.safe_path(path, directory: false)
+  def self.safe_path(path, root:, directory: false)
     path = File.expand_path(path)
+    root = File.expand_path(root)
+    raise "Path outside OpenCode configuration directory: #{path}" unless path == root || path.start_with?(root + File::SEPARATOR)
     cursor = path
     loop do
-      # macOS exposes temporary directories through these root-owned aliases.
-      system_alias = RUBY_PLATFORM.include?('darwin') &&
-                     { '/var' => '/private/var', '/tmp' => '/private/tmp' }[cursor]
-      if File.symlink?(cursor) && !(system_alias && File.realpath(cursor) == system_alias)
-        raise "Refusing symlink: #{cursor}"
-      end
+      # Ancestors outside the managed root may be symlinked on shared systems
+      # (for example /home). Reject links only at or inside the managed root.
+      raise "Refusing symlink: #{cursor}" if File.symlink?(cursor)
       if File.exist?(cursor)
-        expected_directory = cursor != path || directory
+        expected_directory = cursor == root || cursor != path || directory
         valid = expected_directory ? File.directory?(cursor) : File.file?(cursor)
         raise "Unsafe path: #{cursor}" unless valid
       end
-      parent = File.dirname(cursor)
-      break if parent == cursor
-      cursor = parent
+      break if cursor == root
+      cursor = File.dirname(cursor)
     end
     path
   end
@@ -223,7 +221,7 @@ module Caveman
   end
 
   def self.managed_state(root)
-    path = safe_path(File.join(root, MANIFEST))
+    path = safe_path(File.join(root, MANIFEST), root: root)
     return nil unless File.exist?(path)
     state = JSON.parse(File.read(path, encoding: 'UTF-8'))
     valid = state['schema'] == 1 && state['files'].is_a?(Hash) && state['files'].keys.sort == SOURCES.keys.sort &&
@@ -236,7 +234,7 @@ module Caveman
 
   def self.verify_owned(root, state, instructions)
     state['files'].each do |relative, expected|
-      path = safe_path(File.join(root, relative))
+      path = safe_path(File.join(root, relative), root: root)
       raise "Managed file missing or modified; restore it before continuing: #{path}" unless File.file?(path) && digest(File.binread(path)) == expected
     end
     span = block_span(instructions)
@@ -272,9 +270,9 @@ module Caveman
       return
     end
     raise 'OPENCODE_CONFIG_DIR must equal $XDG_CONFIG_HOME/opencode (or ~/.config/opencode); use the same XDG_CONFIG_HOME when running OpenCode' unless root == File.expand_path(runtime)
-    safe_path(root, directory: true)
+    safe_path(root, root: root, directory: true)
     raise "OpenCode configuration directory missing; run make install first: #{root}" unless File.directory?(root)
-    lock = safe_path(File.join(root, '.caveman-install.lock'), directory: true)
+    lock = safe_path(File.join(root, '.caveman-install.lock'), root: root, directory: true)
     begin
       Dir.mkdir(lock)
     rescue Errno::EEXIST
@@ -290,18 +288,18 @@ module Caveman
         raise 'Caveman is not managed by this repository; use make install-caveman first'
       end
       configs = %w[opencode.jsonc opencode.json].select do |name|
-        path = safe_path(File.join(root, name))
+        path = safe_path(File.join(root, name), root: root)
         File.exist?(path)
       end
       raise 'Expected exactly one opencode.jsonc or opencode.json; resolve missing/ambiguous configuration first' unless configs.length == 1
       config_name = configs.first
       raise 'Managed OpenCode configuration path changed' if state && state['config'] != config_name
       config_path = File.join(root, config_name)
-      instructions_path = safe_path(File.join(root, 'AGENTS.md'))
+      instructions_path = safe_path(File.join(root, 'AGENTS.md'), root: root)
       config = File.read(config_path, encoding: 'UTF-8')
       instructions = File.exist?(instructions_path) ? File.read(instructions_path, encoding: 'UTF-8') : ''
       span = block_span(instructions)
-      paths = SOURCES.keys.map { |relative| safe_path(File.join(root, relative)) }
+      paths = SOURCES.keys.map { |relative| safe_path(File.join(root, relative), root: root) }
       if state
         verify_owned(root, state, instructions)
         # Validate registration even on no-op installs and updates.
@@ -314,7 +312,7 @@ module Caveman
         raise 'Existing Caveman instructions are not owned by this installer' if span || instructions.include?('Respond terse like smart caveman')
         paths.each { |path| raise "Unowned Caveman file conflict: #{path}" if File.exist?(path) }
         %w[plugins/caveman skills/caveman].each do |relative|
-          path = safe_path(File.join(root, relative), directory: true)
+          path = safe_path(File.join(root, relative), root: root, directory: true)
           raise "Unowned Caveman directory conflict: #{path}" if File.exist?(path)
         end
       end
@@ -322,7 +320,7 @@ module Caveman
         changes = paths.map { |path| [path, nil] }
         changes += [[config_path, removed_config], [instructions_path, replace_block(instructions, '')], [manifest_path, nil]]
         %w[.caveman-active .caveman-active.prev].each do |name|
-          path = safe_path(File.join(root, name))
+          path = safe_path(File.join(root, name), root: root)
           changes << [path, nil] if File.exist?(path)
         end
         apply(changes)
@@ -346,7 +344,7 @@ module Caveman
       changes = payload.map { |relative, content| [File.join(root, relative), content] }
       changes += [[config_path, updated_config], [instructions_path, replace_block(instructions, block)], [manifest_path, JSON.pretty_generate(manifest) + "\n"]]
       # Keep a private first-install backup; never overwrite it on updates.
-      backup = safe_path(File.join(root, '.caveman-config-backup'))
+      backup = safe_path(File.join(root, '.caveman-config-backup'), root: root)
       changes.unshift([backup, config]) unless File.exist?(backup) || state
       apply(changes)
       puts "Installed Caveman #{RELEASE} output-only integration in #{root}. Restart OpenCode."
@@ -356,7 +354,7 @@ module Caveman
   end
 
   def self.preserve_instructions(template, destination, temporary)
-    safe_path(destination)
+    safe_path(destination, root: File.dirname(destination))
     text = File.exist?(destination) ? File.read(destination, encoding: 'UTF-8') : ''
     span = block_span(text)
     base = File.read(template, encoding: 'UTF-8')
