@@ -57,7 +57,7 @@ Only `/implement` requires an explicit issue number (for example, `42`, not `#42
 | --- | --- |
 | `/plan` | Read the issue from chat context, inspect code, and draft a plan. No edits; stops for approval. |
 | `/export-plan` | Save the latest conversation plan to `docs/github-issues/<branch-slug>/plan.md` at the current repository root. Exports only; does not approve implementation. |
-| `/implement 42 [additional instructions]` | Implement the approved conversation plan with any additional input, update tests/docs, and run checks. Asks for a number only if missing or invalid. |
+| `/implement 42 [additional instructions]` | Implement the approved conversation plan in ordered phases, update tests/docs, check and commit each logical group, then run broader validation. Asks for a number only if missing or invalid. |
 | `/review-again` | Review the actual changes against the current issue, fix confirmed problems, and rerun checks. |
 | `/draft-pr` | Commit intended changes, push, and open a draft PR for the current issue using the repository template. |
 
@@ -68,7 +68,7 @@ For `/implement`, only the first input token is the issue number. Everything aft
 Focus on the cache invalidation fix and add a regression test.
 ```
 
-Approve the plan before invoking `/implement`. Invoke `/draft-pr` only after reviewing the completed work and validation; the earlier stages never commit, push, or open a PR. The draft remains open for human review, with no automatic merge. These are prompt instructions, not a technical permission sandbox.
+Approve the plan before invoking `/implement`. This command authorizes commits for each verified logical group unless additional user instructions restrict committing; ordinary implementation approval alone does not authorize commits. Both primary agents plan non-trivial work in ordered phases with dependencies and logical commit boundaries, keep changes minimal and robust, and follow repository patterns and formatting conventions. Run focused tests and applicable formatting/lint checks before each commit, then broader validation at the end. Invoke `/draft-pr` only after reviewing the completed work and validation; earlier stages never push or open a PR. The draft remains open for human review, with no automatic merge. These are prompt instructions, not a technical permission sandbox.
 
 `/export-plan` saves the latest generated plan unchanged, creates missing directories, and replaces any previous export. It uses the current branch, removes its first slash-delimited prefix (such as `feature/` or `devops/`), and replaces any remaining slashes with hyphens. For example, `feature/add-login` exports to `docs/github-issues/add-login/plan.md`, and `devops/ci/cache` exports to `docs/github-issues/ci-cache/plan.md`. A branch without a slash is used unchanged. If there is no plan or the repository/branch cannot be determined, it stops without exporting. `/plan` remains read-only; invoke `/export-plan` separately to save its output.
 
