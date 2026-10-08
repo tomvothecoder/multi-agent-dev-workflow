@@ -11,6 +11,7 @@ help:
 		'  install-lazygit       Install Lazygit (Linux pin: LAZYGIT_VERSION=0.66.0)' \
 		'  setup-lazygit         Suggest ~/worktrees for new Lazygit worktrees' \
 		'' 'Updates:' \
+		'  update-all            Run all updates in order, stopping on failure' \
 		'  update-opencode       Upgrade OpenCode, refresh models, and sync config' \
 		'  refresh-models        Refresh the OpenCode model catalog' \
 		'  update-livai-models   Update only provider.livai.models from the template' \
@@ -51,7 +52,13 @@ setup-lazygit:
 
 # --- Updates ------------------------------------------------------------------
 
-.PHONY: update-opencode refresh-models update-livai-models update-agents update-permissions update-agents-md update-skills update-commands update-skills-commands
+.PHONY: update-all update-opencode refresh-models update-livai-models update-agents update-permissions update-agents-md update-skills update-commands update-skills-commands
+
+update-all:
+	@$(MAKE) update-opencode
+	@$(MAKE) update-agents-md
+	@$(MAKE) update-skills
+	@$(MAKE) update-commands
 
 update-opencode:
 	@opencode upgrade

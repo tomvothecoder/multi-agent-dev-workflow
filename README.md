@@ -142,6 +142,14 @@ To receive updates to the primary response rules in an existing installation, re
 
 ### Refreshing template sections
 
+Run every update with one command:
+
+```bash
+make update-all
+```
+
+This runs `update-opencode`, `update-agents-md`, `update-skills`, and `update-commands` sequentially, stopping on the first failure even with parallel Make enabled. `update-opencode` already covers the model refresh and LivAI models, agents, and permissions, so these updates are not repeated. Review or back up customizations first: this replaces the managed configuration sections, `AGENTS.md`, skills, and commands. It does not run installation targets or configure Lazygit.
+
 `make update-agents` runs `make refresh-models` before updating configuration. If the model refresh fails, the configuration update stops.
 
 When model releases require configuration updates, refresh only the relevant user-owned sections from the repository template:

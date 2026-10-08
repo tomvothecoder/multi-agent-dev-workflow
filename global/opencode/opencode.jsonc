@@ -190,6 +190,7 @@
     "make install-skills": "allow",
     "make install-commands": "allow",
     "make refresh-models": "allow",
+    "make update-all": "allow",
     "make update-opencode": "allow",
     "make update-livai-models": "allow",
     "make update-agents": "allow",

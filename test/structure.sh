@@ -178,7 +178,7 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.reviewer.permission.task == "deny" and
   .agent.reviewer.permission.skill == {"*":"deny","review":"allow"} and
   .agent.reviewer.permission.bash["git diff*"] == "allow" and
-  (. as $config | ["make help", "make install", "make install-skills", "make install-commands", "make refresh-models", "make update-opencode", "make update-livai-models", "make update-agents", "make update-permissions", "make update-agents-md", "make update-skills", "make update-commands", "make update-skills-commands", "make install-nersc-rules", "make uninstall-nersc-rules", "make test", "make structure-test"] | all(. as $command | $config.permission.bash[$command] == "allow")) and
+  (. as $config | ["make help", "make install", "make install-skills", "make install-commands", "make refresh-models", "make update-all", "make update-opencode", "make update-livai-models", "make update-agents", "make update-permissions", "make update-agents-md", "make update-skills", "make update-commands", "make update-skills-commands", "make install-nersc-rules", "make uninstall-nersc-rules", "make test", "make structure-test"] | all(. as $command | $config.permission.bash[$command] == "allow")) and
   (. as $config | ["make install-opencode", "make install-opencode-config", "make update-opencode-sections"] | all(. as $command | $config.permission.bash | has($command) | not))
 ' >/dev/null
 
@@ -190,7 +190,7 @@ make -s -C "$CHECK_DIR" > "$CHECK_DIR/help"
 for section in Installation Updates 'Optional profiles' Validation; do
   rg -Fxq "$section:" "$CHECK_DIR/help"
 done
-for target in update-skills update-commands update-skills-commands install-lazygit setup-lazygit lazygit-test; do
+for target in update-all update-skills update-commands update-skills-commands install-lazygit setup-lazygit lazygit-test; do
   rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"
 done
 for target in install-opencode install-opencode-config update-opencode-sections; do
@@ -203,12 +203,14 @@ cat > "$CHECK_DIR/global/sync-opencode-config-sections.py" <<'EOF'
 set -eu
 test "$*" = 'livai-models agents permissions'
 printf 'sync\n' >> "$UPDATE_TEST_LOG"
+test "${UPDATE_FAIL_STEP:-}" != sync
 EOF
 chmod +x "$CHECK_DIR/global/sync-opencode-config-sections.py"
 cat > "$CHECK_DIR/opencode" <<'EOF'
 #!/usr/bin/env bash
 set -eu
 printf '%s\n' "$*" >> "$UPDATE_TEST_LOG"
+test "${UPDATE_FAIL_STEP:-}" != "$*"
 if [ "$*" = upgrade ]; then
   exit "${UPDATE_TEST_EXIT:-0}"
 fi
@@ -233,5 +235,36 @@ if PATH="$CHECK_DIR:$PATH" UPDATE_TEST_LOG="$CHECK_DIR/log" REFRESH_TEST_EXIT=1 
 fi
 printf 'upgrade\nmodels --refresh\n' > "$CHECK_DIR/expected"
 cmp "$CHECK_DIR/expected" "$CHECK_DIR/log"
+
+cat > "$CHECK_DIR/global/sync-opencode-agents-md.sh" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+printf 'agents-md\n' >> "$UPDATE_TEST_LOG"
+test "${UPDATE_FAIL_STEP:-}" != agents-md
+EOF
+cat > "$CHECK_DIR/global/install-opencode-config.sh" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+case "$*" in update-skills|update-commands) ;; *) exit 1 ;; esac
+printf '%s\n' "$*" >> "$UPDATE_TEST_LOG"
+test "${UPDATE_FAIL_STEP:-}" != "$*"
+EOF
+chmod +x "$CHECK_DIR/global/sync-opencode-agents-md.sh" "$CHECK_DIR/global/install-opencode-config.sh"
+# A parallel outer Make must still execute each update exactly once, in order.
+steps=(upgrade 'models --refresh' sync agents-md update-skills update-commands)
+: > "$CHECK_DIR/log"
+PATH="$CHECK_DIR:$PATH" UPDATE_TEST_LOG="$CHECK_DIR/log" make -j4 -C "$CHECK_DIR" update-all >/dev/null
+printf '%s\n' "${steps[@]}" > "$CHECK_DIR/expected"
+cmp "$CHECK_DIR/expected" "$CHECK_DIR/log"
+# Failure at any stage must prevent all subsequent stages from running.
+: > "$CHECK_DIR/expected"
+for step in "${steps[@]}"; do
+  printf '%s\n' "$step" >> "$CHECK_DIR/expected"
+  : > "$CHECK_DIR/log"
+  if PATH="$CHECK_DIR:$PATH" UPDATE_TEST_LOG="$CHECK_DIR/log" UPDATE_FAIL_STEP="$step" make -j4 -C "$CHECK_DIR" update-all >"$CHECK_DIR/error" 2>&1; then
+    exit 1
+  fi
+  cmp "$CHECK_DIR/expected" "$CHECK_DIR/log"
+done
 
 printf 'Structure test passed.\n'
