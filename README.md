@@ -49,24 +49,30 @@ For non-trivial plans, use these headings in order:
 
 After implementation, report **Result** (what changed and the outcome), **Validation** (checks run and their results, plus relevant checks not run and why), and **Remaining issues** (omit if none). State clearly when implementation is incomplete. A plan-only response must not use this results format or imply that checks ran.
 
+## Worktree directories
+
+Store Git worktrees at `~/worktrees/<repo>/<branch>` (for example, `~/worktrees/my-app/feature/add-login`). The template allows `external_directory` access and `edit` operations under `~/worktrees/**`, using OpenCode's path-keyed permission objects and home-directory expansion. Catch-all defaults come first and path-specific allowances last because the last matching rule wins; other external paths still require approval, and ordinary edit defaults are unchanged.
+
+Directory access does not bypass shell permissions or agent-specific restrictions. Explorers and the reviewer retain their explicit external-directory denials and read-only edit permissions; the reviewer's restricted shell rules are unchanged. See [OpenCode permissions](https://opencode.ai/docs/permissions/) for matching and agent override semantics.
+
 ## Workflow commands
 
-Only `/implement` requires an explicit issue number (for example, `42`, not `#42`). `/plan` accepts an ad-hoc task description or uses the current task or issue from chat context; no GitHub issue or GitHub access is required for ad-hoc planning. If the task is missing or ambiguous, it asks for clarification and stops. `/review-again` and `/draft-pr` derive the current issue from chat context; if it is missing or ambiguous, they report that and stop without asking for a number. `/export-plan` just uses the latest generated plan.
+`/plan` and `/implement` accept an ad-hoc task description or use the current task or issue from chat context; no GitHub issue or GitHub access is required for ad-hoc planning or implementation. If the task is missing or ambiguous, they ask for clarification and stop. They read a GitHub issue only when the task is tied to a clearly identified issue. `/review-again` and `/draft-pr` derive the current issue from chat context; if it is missing or ambiguous, they report that and stop without asking for a number. `/export-plan` just uses the latest generated plan.
 
 | Command | Stage |
 | --- | --- |
 | `/plan [task description]` | Plan an ad-hoc task or the current issue, inspecting code and reading the issue only when applicable. No edits; stops for approval. |
 | `/export-plan` | Save the latest conversation plan to `docs/github-issues/<branch-slug>/plan.md` at the current repository root. Exports only; does not approve implementation. |
-| `/implement 42 [additional instructions]` | Implement the approved conversation plan in ordered phases, update tests/docs, check and commit each logical group, then run broader validation. Asks for a number only if missing or invalid. |
+| `/implement [task description]` | Implement the approved conversation plan for an ad-hoc task or the current issue in ordered phases, update tests/docs, check and commit each logical group, then run broader validation. Stops if no approved plan exists for the selected task. |
 | `/review-again` | Review the actual changes against the current issue, fix confirmed problems, and rerun checks. |
 | `/draft-pr` | Commit intended changes, push, and open a draft PR for the current issue using the repository template. |
 
-For example, `/plan Add a dark mode toggle` plans directly from that description, while `/plan` uses the current task or issue already discussed in chat. Planning does not create a GitHub issue. The issue requirements for `/implement`, `/review-again`, and `/draft-pr` remain unchanged.
+For example, `/plan Add a dark mode toggle` plans directly from that description, while `/plan` uses the current task or issue already discussed in chat. After approving the plan, `/implement` uses that same chat context, or `/implement Add a dark mode toggle` selects the task explicitly. Neither command creates a GitHub issue. The issue requirements for `/review-again` and `/draft-pr` remain unchanged.
 
-For `/implement`, only the first input token is the issue number. Everything after it, including text below the command, is additional user input—not part of issue-number validation. For example:
+For `/implement`, additional instructions, including text below the command, constrain the task and its approved plan. A GitHub issue can still be identified explicitly, but is optional. For example:
 
 ```text
-/implement 42 Keep the public API unchanged.
+/implement Fix the cache invalidation bug. Keep the public API unchanged.
 Focus on the cache invalidation fix and add a regression test.
 ```
 

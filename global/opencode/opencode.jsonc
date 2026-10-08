@@ -149,6 +149,16 @@
 
   "permission": {
     "skill": "allow",
+    // Worktrees live at ~/worktrees/<repo>/<branch>. Last matching rule wins.
+    // These grants do not override bash rules or agent-specific restrictions.
+    "external_directory": {
+      "*": "ask",
+      "~/worktrees/**": "allow"
+    },
+    "edit": {
+      "*": "allow",
+      "~/worktrees/**": "allow"
+    },
   "bash": {
     "*": "ask",
 

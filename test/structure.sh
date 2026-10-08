@@ -19,12 +19,21 @@ for command in plan export-plan implement review-again draft-pr; do
   rg -q '^description: ' "$prompt"
   # Retain the selected primary rather than invoking a read-only subagent.
   if rg -q '^(agent|subtask|model):' "$prompt"; then exit 1; fi
-  # Implement requires an issue number; plan accepts an optional task description.
+  # Plan and implement accept task descriptions or chat context; GitHub is optional.
   if [ "$command" = implement ]; then
     rg -Fxq 'User input: $ARGUMENTS' "$prompt"
-    rg -Fq 'Use the first token of the user input as an issue number containing only decimal digits and greater than zero.' "$prompt"
-    rg -Fq 'If missing or invalid, ask for an issue number and stop.' "$prompt"
-    rg -Fq 'Treat all remaining input, including multiline text and instructions below the command, as additional user instructions, not part of the issue number.' "$prompt"
+    for instruction in \
+      'Use the user input as the task to implement; if no input is provided, use the current task or issue from chat context.' \
+      'A GitHub issue is optional.' \
+      'If the task is missing or ambiguous, ask for clarification and stop; do not require an issue number.' \
+      'Treat additional instructions, including multiline text and instructions below the command, as constraints on the task and its approved plan.' \
+      'Read the issue with gh only when the task is tied to a clearly identified GitHub issue.' \
+      'For ad-hoc tasks, implement directly from the approved conversation plan without requiring GitHub access or creating an issue.' \
+      'Implement the approved conversation plan for the selected task with the additional user instructions.' \
+      'If no approved plan exists for that task, report that and stop.'; do
+      rg -Fq "$instruction" "$prompt"
+    done
+    if rg -q 'Use the first token|ask for an issue number|Read the issue with gh and' "$prompt"; then exit 1; fi
     rg -Fq 'with the additional user instructions.' "$prompt"
     rg -Fq 'Keep changes as minimal and clean as possible to achieve the task; avoid unrelated refactors.' "$prompt"
   elif [ "$command" = plan ]; then
@@ -96,6 +105,18 @@ test ! -e "$ROOT/global/uninstall-global-agent-workflow.sh"
 # The template is JSONC; all comments occupy their own lines.
 sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .permission.bash["make install-commands"] == "allow" and
+  .permission.external_directory == {"*":"ask","~/worktrees/**":"allow"} and
+  (.permission.external_directory | keys_unsorted == ["*", "~/worktrees/**"]) and
+  .permission.edit == {"*":"allow","~/worktrees/**":"allow"} and
+  (.permission.edit | keys_unsorted == ["*", "~/worktrees/**"]) and
+  .permission.bash["*"] == "ask" and
+  .permission.bash["rm *"] == "deny" and
+  (. as $config | ["explorer", "livai-explorer", "reviewer"] | all(. as $agent |
+    $config.agent[$agent].permission.edit == "deny" and
+    $config.agent[$agent].permission.external_directory == "deny")) and
+  .agent.explorer.permission.bash == "deny" and
+  .agent["livai-explorer"].permission.bash == "deny" and
+  .agent.reviewer.permission.bash == {"*":"deny","git status*":"allow","git diff*":"allow","git show*":"allow"} and
   .plugin == null and
   .default_agent == "livai-primary" and
   .subagent_depth == 1 and
