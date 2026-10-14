@@ -25,6 +25,18 @@ These are global defaults for a direct OpenCode workflow. Repository-level `AGEN
 - Do not expose secrets, credentials, tokens, private keys, or unapproved proprietary data.
 - Do not commit, push, open PRs, or merge unless explicitly asked.
 
+## Python Style
+
+Apply these rules to new or changed Python code:
+
+- Follow PEP 8 and the repository's formatter.
+- Separate logical code groups with blank lines.
+- Add a blank line before final returns after computation or mutation; omit it for simple return-only blocks.
+- Place public functions and APIs above private helpers; order private helpers by call hierarchy, caller before child helpers, where practical.
+- Keep `if __name__ == "__main__":` last.
+- Prefix internal helpers with `_`.
+- Avoid unnecessary nested functions and opaque lambdas; use private module-level helpers unless a closure is needed.
+
 ## Agent Roles
 
 - `primary` plans, implements, tests, and fixes. It handles normal work directly.
