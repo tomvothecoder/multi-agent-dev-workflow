@@ -44,6 +44,13 @@ for command in plan export-plan implement review-again draft-pr; do
       'If the task is missing or ambiguous, ask for clarification and stop; do not require an issue number.' \
       'Read the issue with gh only when the task is tied to a clearly identified GitHub issue.' \
       "For ad-hoc tasks, plan directly from the user's description without requiring GitHub access or creating an issue." \
+      'Plan the smallest complete change that resolves the stated issue.' \
+      'Prefer simple, robust, readable code and existing repository patterns.' \
+      'Avoid unrelated refactors, speculative abstractions, and unnecessary files or phases.' \
+      'Ground the approach in inspected code and identify the affected files and behavior.' \
+      'Keep the plan itself concise, concrete, and proportional to the task.' \
+      'Present the plan with relevant tests, risks, and open questions.' \
+      "Use the repository's plan format when defined; otherwise use the primary agent's format for non-trivial work and a short checklist for small tasks." \
       'Stop for approval.'; do
       rg -Fq "$instruction" "$prompt"
     done
@@ -140,6 +147,12 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   (.agent.primary.prompt as $prompt | ["question or request only to review, answer without editing files", "unclear authorization to implement", "stop without editing files or running mutating commands", "explicit implementation request", "without an unnecessary approval turn", "formal plan only for non-trivial work", "Problem, Scope, Constraints and non-goals, Open questions (omit if none), Acceptance criteria, and Validation", "who must answer each open question and whether it blocks implementation", "Result (what changed and the outcome), Validation (checks run and results, plus relevant checks not run and why), and Remaining issues (omit if none)", "Never use the implementation-results format for plan-only responses"] | all(. as $phrase | $prompt | contains($phrase))) and
   (.agent.primary.prompt as $prompt | [
     "Keep plans as simple, clean, and concise as possible while remaining robust and actionable",
+    "Plan the smallest complete change that resolves the stated issue.",
+    "Prefer simple, robust, readable code and existing repository patterns.",
+    "Avoid unrelated refactors, speculative abstractions, and unnecessary files or phases.",
+    "Ground the approach in inspected code and identify the affected files and behavior.",
+    "Keep the plan itself concise, concrete, and proportional to the task.",
+    "plan format when defined; otherwise use a short checklist for small tasks and a formal plan only for non-trivial work",
     "use the fewest ordered phases needed, noting dependencies and intended logical commit boundaries briefly",
     "Avoid repeated requirements, speculative work, unnecessary detail, and artificial tracks; retain essential risks and safeguards",
     "Keep changes minimal, clean, cohesive, and robust",
