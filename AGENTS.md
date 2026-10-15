@@ -30,6 +30,9 @@ These are global defaults for a direct OpenCode workflow. Repository-level `AGEN
 Apply these rules to new or changed Python code:
 
 - Follow PEP 8 and the repository's formatter.
+- Keep all imports at module level, after the module docstring and before module constants or other code; do not place imports inside functions or methods.
+- Place `from __future__` imports first, then group standard-library, third-party, and local imports in that order, with a blank line between groups.
+- Sort imports within each group using the repository's configured import sorter, such as Ruff's `I` rules; follow its configuration rather than manually imposing a different order.
 - Separate logical code groups with blank lines.
 - Add a blank line before final returns after computation or mutation; omit it for simple return-only blocks.
 - Place public functions and APIs above private helpers; order private helpers by call hierarchy, caller before child helpers, where practical.
