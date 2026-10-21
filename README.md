@@ -20,12 +20,12 @@ flowchart LR
 
 | Agent            | Model                            | Role                                                                                                       | Permissions                                                                              |
 | ---------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `livai-primary`  | `livai/gpt-5.6-terra`, medium    | Default primary: plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only LivAI Explorer or Reviewer.                     |
-| `livai-explorer` | `livai/gpt-5.6-luna`, low        | Targeted repository investigation for LivAI Primary.                                                       | Read/search only; no shell, edits, web access, or delegation.                            |
+| `livai-primary`  | `livai/gpt-6.1-sol`, medium      | Default primary: plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only LivAI Explorer or Reviewer.                     |
+| `livai-explorer` | `livai/gpt-6-luna`, low          | Targeted repository investigation for LivAI Primary.                                                       | Read/search only; no shell, edits, web access, or delegation.                            |
 | `primary`        | `openai/gpt-6.1-sol`, medium     | OpenAI-backed primary: plans, implements, tests, and fixes.                                                 | Normal development access; may call only Explorer or Reviewer.                           |
 | `reviewer`       | `github-copilot/claude-opus-5-5` | One independent review after substantial changes.                                                          | Read-only; may inspect `git status`, `git diff`, and `git show`; no edits or delegation. |
 
-The existing `primary` and `explorer` agents remain available as the OpenAI-backed workflow. Select `primary` explicitly when you want that path. GitHub Copilot remains the reviewer for both workflows. If it is unavailable, configure the `reviewer` model as `livai/gpt-6.6-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
+The existing `primary` and `explorer` agents remain available as the OpenAI-backed workflow. Select `primary` explicitly when you want that path. GitHub Copilot remains the reviewer for both workflows. If it is unavailable, configure the `reviewer` model as `livai/gpt-6.1-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
 
 Explorer and Reviewer each have one focused skill, installed globally by `make install`:
 
@@ -98,7 +98,7 @@ The OpenCode template enables these providers:
 
 - OpenAI, for the alternate `primary` and `explorer` workflow.
 - GitHub Copilot, for the preferred Claude Sonnet 5 reviewer.
-- LivAI, for the default `livai-primary` and `livai-explorer` workflow. Its custom endpoint includes `livai/gpt-5.6-terra`, `livai/gpt-5.6-luna`, and `livai/gpt-5.6-sol`. LivAI is deliberately a first-class workflow, not an automatic fallback.
+- LivAI, for the default `livai-primary` and `livai-explorer` workflow. Its custom endpoint includes `livai/gpt-6-luna`, `livai/gpt-6-sol`, `livai/gpt-6.1-sol`, and `livai/gpt-6-astra`. These models are available to API Developer keys; Service key availability will follow over the next couple of weeks. LivAI is deliberately a first-class workflow, not an automatic fallback.
 
 Authenticate the providers you intend to use, then refresh the model list:
 

@@ -45,7 +45,7 @@ cmp -s "$ROOT/AGENTS.md" "$CORE_CONFIG_DIR/AGENTS.md"
 test "$(stat -c %a "$CORE_CONFIG_DIR/AGENTS.md" 2>/dev/null || stat -f %Lp "$CORE_CONFIG_DIR/AGENTS.md")" = 600
 
 # Selected configuration sections can be refreshed without replacing user-owned settings.
-python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("  \"autoupdate\": false,", "  \"autoupdate\": false,\n  \"custom\": { \"preserve\": true },"); text = text.replace("\"gpt-5.6-terra\"", "\"outdated-model\"", 1); path.write_text(text)' "$CORE_CONFIG"
+python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("  \"autoupdate\": false,", "  \"autoupdate\": false,\n  \"custom\": { \"preserve\": true },"); text = text.replace("\"gpt-6.1-sol\"", "\"outdated-model\"", 1); path.write_text(text)' "$CORE_CONFIG"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-livai-models >"$CORE_CONFIG_HOME/models-output"
 rg -q '^  "custom": \{ "preserve": true \},$' "$CORE_CONFIG"
 rg -Fq "Updated livai-models from the OpenCode template: $CORE_CONFIG" "$CORE_CONFIG_HOME/models-output"
@@ -60,7 +60,7 @@ python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); path.write_te
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-permissions
 test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '.permission')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '.permission')"
 
-python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("\"gpt-5.6-terra\"", "\"outdated-model\"", 1).replace("\"primary\": {", "\"outdated-agent\": {", 1).replace("  \"permission\": {", "  \"outdated-permission\": {", 1); path.write_text(text)' "$CORE_CONFIG"
+python3 -c 'import pathlib, sys; path = pathlib.Path(sys.argv[1]); text = path.read_text(); text = text.replace("\"gpt-6.1-sol\"", "\"outdated-model\"", 1).replace("\"primary\": {", "\"outdated-agent\": {", 1).replace("  \"permission\": {", "  \"outdated-permission\": {", 1); path.write_text(text)' "$CORE_CONFIG"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-opencode
 test "$(wc -l < "$MODEL_REFRESH_LOG" | tr -d ' ')" = 2
 test "$(sed '/^[[:space:]]*\/\//d' "$ROOT/global/opencode/opencode.jsonc" | jq -c '{models: .provider.livai.models, agent, permission}')" = "$(sed '/^[[:space:]]*\/\//d' "$CORE_CONFIG" | jq -c '{models: .provider.livai.models, agent, permission}')"

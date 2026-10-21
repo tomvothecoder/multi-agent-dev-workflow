@@ -129,14 +129,18 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .default_agent == "livai-primary" and
   .subagent_depth == 1 and
   .enabled_providers == ["openai", "github-copilot", "livai"] and
-  .provider.livai.models["gpt-5.6-terra"].name == "GPT-5.6 Terra" and
-  .provider.livai.models["gpt-5.6-luna"].name == "GPT-5.6 Luna" and
-  .provider.livai.models["gpt-5.6-sol"].name == "GPT-5.6 Sol" and
-  (.provider.livai.models | keys == ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"]) and
-  (.provider.livai.models["gpt-5.6-terra"].variants | keys == ["high", "low", "medium", "none", "xhigh"]) and
-  (.provider.livai.models["gpt-5.6-luna"].variants | keys == ["high", "low", "medium", "none", "xhigh"]) and
-  (.provider.livai.models["gpt-5.6-sol"].variants | keys == ["high", "low", "medium", "none", "xhigh"]) and
-  (.provider.livai.models | has("gpt-5.6") | not) and
+  .provider.livai.models["gpt-6.1-sol"].name == "GPT-6.1 Sol" and
+  .provider.livai.models["gpt-6-luna"].name == "GPT-6 Luna" and
+  .provider.livai.models["gpt-6-sol"].name == "GPT-6 Sol" and
+  .provider.livai.models["gpt-6-astra"].name == "GPT-6 Astra" and
+  (.provider.livai.models | keys == ["gpt-6-astra", "gpt-6-luna", "gpt-6-sol", "gpt-6.1-sol"]) and
+  (.provider.livai.models | all(.variants == {
+    "xhigh": {"reasoningEffort":"xhigh"},
+    "high": {"reasoningEffort":"high"},
+    "medium": {"reasoningEffort":"medium"},
+    "low": {"reasoningEffort":"low"},
+    "none": {"reasoningEffort":"none"}
+  })) and
   .agent.primary.model == "openai/gpt-6.1-sol" and
   .agent.primary.mode == "primary" and
   .agent.primary.variant == "medium" and
@@ -174,14 +178,16 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.explorer.permission.edit == "deny" and
   .agent.explorer.permission.task == "deny" and
   .agent.explorer.permission.skill == {"*":"deny","explore":"allow"} and
-  .agent["livai-primary"].model == "livai/gpt-5.6-terra" and
+  .agent["livai-primary"].model == "livai/gpt-6.1-sol" and
+  .agent["livai-primary"].model == (.agent.primary.model | sub("^openai/"; "livai/")) and
   .agent["livai-primary"].mode == "primary" and
   .agent["livai-primary"].variant == "medium" and
   .agent["livai-primary"].reasoningEffort == "medium" and
   .agent["livai-primary"].permission.task == {"*":"deny","livai-explorer":"allow","reviewer":"allow"} and
   .agent["livai-primary"].permission.skill == "deny" and
   .agent["livai-explorer"].mode == "subagent" and
-  .agent["livai-explorer"].model == "livai/gpt-5.6-luna" and
+  .agent["livai-explorer"].model == "livai/gpt-6-luna" and
+  .agent["livai-explorer"].model == (.agent.explorer.model | sub("^openai/"; "livai/")) and
   .agent["livai-explorer"].variant == "low" and
   .agent["livai-explorer"].reasoningEffort == "low" and
   .agent["livai-explorer"].permission.edit == "deny" and
