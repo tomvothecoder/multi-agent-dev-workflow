@@ -49,8 +49,10 @@ for command in plan export-plan implement review-again draft-pr; do
       'Avoid unrelated refactors, speculative abstractions, and unnecessary files or phases.' \
       'Ground the approach in inspected code and identify the affected files and behavior.' \
       'Keep the plan itself concise, concrete, and proportional to the task.' \
-      'Present the plan with relevant tests, risks, and open questions.' \
-      "Use the repository's plan format when defined; otherwise use the primary agent's format for non-trivial work and a short checklist for small tasks." \
+      'Follow AGENTS.md documentation rules.' \
+      "Use the repository's plan format when defined; otherwise default to a short checklist covering affected files, behavior changes, and validation." \
+      'Add separate sections only for material risks, constraints, or unresolved decisions.' \
+      'Use formal plans only when complexity warrants them.' \
       'Stop for approval.'; do
       rg -Fq "$instruction" "$prompt"
     done
@@ -64,6 +66,13 @@ for command in plan export-plan implement review-again draft-pr; do
   fi
 done
 rg -Fq 'Do not modify files or run mutating commands.' "$ROOT/global/opencode/commands/plan.md"
+rg -Fq 'default to a short checklist covering affected files, behavior changes, and validation.' "$ROOT/README.md"
+rg -Fq '[documentation style rules](AGENTS.md#documentation-style)' "$ROOT/README.md"
+if rg -Fq \
+  -e 'Problem, Scope, Constraints and non-goals, Open questions' \
+  -e 'formal plan only for non-trivial work' \
+  "$HOST_TEMPLATE" "$ROOT/global/opencode/commands/plan.md"; then exit 1; fi
+if rg -Fq 'plan non-trivial work in ordered phases with dependencies and logical commit boundaries' "$ROOT/README.md"; then exit 1; fi
 for instruction in \
   'Save the latest plan generated in this conversation as Markdown, preserving its wording and structure.' \
   'No arguments are required.' \
@@ -103,6 +112,19 @@ rg -Fq 'do not merge' "$ROOT/global/opencode/commands/draft-pr.md"
 rg -Fq 'Stop if the work is incomplete, relevant checks have not passed, or HEAD is detached or on the default/PR base branch.' "$ROOT/global/opencode/commands/draft-pr.md"
 rg -Fq 'Push without force-pushing' "$ROOT/global/opencode/commands/draft-pr.md"
 rg -Fq 'Commit only intended changes, never secrets; skip empty commits.' "$ROOT/global/opencode/commands/draft-pr.md"
+rg -Fq 'Follow AGENTS.md documentation rules; do not repeat facts across summary, validation, and risks unless the repository template requires it.' "$ROOT/global/opencode/commands/draft-pr.md"
+for instruction in \
+  '## Documentation Style' \
+  'Apply these rules to documentation, plans, issues, PRs, and other written artifacts, regardless of chat mode.' \
+  'Write the shortest complete version for the intended reader.' \
+  'State each fact once. Link to existing details instead of repeating them.' \
+  'Add examples only when they clarify non-obvious usage.' \
+  'Use headings only when they improve navigation. Omit empty or unnecessary sections.' \
+  'Preserve exact commands, paths, technical qualifications, and safety warnings.' \
+  'Before finishing, remove repetition and sentences that add no useful information.' \
+  'Follow explicit user requests and required repository templates over these defaults.'; do
+  rg -Fq "$instruction" "$ROOT/AGENTS.md"
+done
 test ! -e "$ROOT/global/opencode/oh-my-opencode-slim.jsonc"
 test ! -e "$ROOT/global/opencode/oh-my-opencode-slim/hybrid/orchestrator_append.md"
 test ! -e "$ROOT/global/backup-global-agent-workflow.sh"
@@ -148,17 +170,18 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.primary.permission.task == {"*":"deny","explorer":"allow","reviewer":"allow"} and
   .agent.primary.permission.skill == "deny" and
   (.agent.primary.prompt == (.agent["livai-primary"].prompt | gsub("livai-explorer"; "explorer"))) and
-  (.agent.primary.prompt as $prompt | ["question or request only to review, answer without editing files", "unclear authorization to implement", "stop without editing files or running mutating commands", "explicit implementation request", "without an unnecessary approval turn", "formal plan only for non-trivial work", "Problem, Scope, Constraints and non-goals, Open questions (omit if none), Acceptance criteria, and Validation", "who must answer each open question and whether it blocks implementation", "Result (what changed and the outcome), Validation (checks run and results, plus relevant checks not run and why), and Remaining issues (omit if none)", "Never use the implementation-results format for plan-only responses"] | all(. as $phrase | $prompt | contains($phrase))) and
+  (.agent.primary.prompt as $prompt | ["question or request only to review, answer without editing files", "unclear authorization to implement", "stop without editing files or running mutating commands", "explicit implementation request", "without an unnecessary approval turn", "Result (what changed and the outcome), Validation (checks run and results, plus relevant checks not run and why), and Remaining issues (omit if none)", "Never use the implementation-results format for plan-only responses"] | all(. as $phrase | $prompt | contains($phrase))) and
   (.agent.primary.prompt as $prompt | [
-    "Keep plans as simple, clean, and concise as possible while remaining robust and actionable",
     "Plan the smallest complete change that resolves the stated issue.",
     "Prefer simple, robust, readable code and existing repository patterns.",
     "Avoid unrelated refactors, speculative abstractions, and unnecessary files or phases.",
     "Ground the approach in inspected code and identify the affected files and behavior.",
-    "Keep the plan itself concise, concrete, and proportional to the task.",
-    "plan format when defined; otherwise use a short checklist for small tasks and a formal plan only for non-trivial work",
-    "use the fewest ordered phases needed, noting dependencies and intended logical commit boundaries briefly",
-    "Avoid repeated requirements, speculative work, unnecessary detail, and artificial tracks; retain essential risks and safeguards",
+    "plan format when defined; otherwise default to a short checklist covering affected files, behavior changes, and validation.",
+    "Add separate sections only for material risks, constraints, or unresolved decisions.",
+    "Use formal plans only when complexity warrants them.",
+    "Validation must name concrete checks or explain why none apply.",
+    "Follow AGENTS.md documentation rules for all written artifacts.",
+    "Treat brevity as a requirement, not merely a chat style.",
     "Keep changes minimal, clean, cohesive, and robust",
     "follow existing repository patterns and formatting conventions",
     "add or update tests for behavior changes",

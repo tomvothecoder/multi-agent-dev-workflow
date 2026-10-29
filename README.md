@@ -38,14 +38,7 @@ Primary uses its always-on prompt and has no skill access. Each remaining skill 
 
 Both primary agents answer questions and review-only requests without editing. For "plan first", "no code", or unclear authorization to implement, they present the answer or plan and stop; a plan is not permission to implement. An explicit implementation request allows them to proceed through verification without another approval turn. User-specified response formats take precedence. Simple questions and trivial edits do not need a formal plan.
 
-For non-trivial plans, use these headings in order:
-
-1. **Problem** — the need this change addresses.
-2. **Scope** — what is included.
-3. **Constraints and non-goals** — what must remain unchanged or is excluded.
-4. **Open questions** — omit if none; identify who must answer each question and whether it blocks implementation. State non-blocking assumptions explicitly.
-5. **Acceptance criteria** — observable outcomes, not just implementation steps.
-6. **Validation** — concrete checks or why none apply.
+Use the repository's plan format when defined. Otherwise, default to a short checklist covering affected files, behavior changes, and validation. Add sections only for material risks, constraints, or unresolved decisions; use formal plans only when complexity warrants them. All written artifacts follow the [documentation style rules](AGENTS.md#documentation-style), regardless of chat mode.
 
 After implementation, report **Result** (what changed and the outcome), **Validation** (checks run and their results, plus relevant checks not run and why), and **Remaining issues** (omit if none). State clearly when implementation is incomplete. A plan-only response must not use this results format or imply that checks ran.
 
@@ -78,7 +71,7 @@ For `/implement`, additional instructions, including text below the command, con
 Focus on the cache invalidation fix and add a regression test.
 ```
 
-Approve the plan before invoking `/implement`. This command authorizes commits for each verified logical group unless additional user instructions restrict committing; ordinary implementation approval alone does not authorize commits. Both primary agents plan non-trivial work in ordered phases with dependencies and logical commit boundaries, keep changes minimal and robust, and follow repository patterns and formatting conventions. Run focused tests and applicable formatting/lint checks before each commit, then broader validation at the end. Invoke `/draft-pr` only after reviewing the completed work and validation; earlier stages never push or open a PR. The draft remains open for human review, with no automatic merge. These are prompt instructions, not a technical permission sandbox.
+Approve the plan before invoking `/implement`. This command authorizes commits for each verified logical group unless additional user instructions restrict committing; ordinary implementation approval alone does not authorize commits. `/implement` executes the approved plan in ordered phases, one logical group at a time. Run focused tests and applicable formatting/lint checks before each commit, then broader validation at the end. Invoke `/draft-pr` only after reviewing the completed work and validation; earlier stages never push or open a PR. The draft remains open for human review, with no automatic merge. These are prompt instructions, not a technical permission sandbox.
 
 `/export-plan` saves the latest generated plan unchanged, creates missing directories, and replaces any previous export. It uses the current branch, removes its first slash-delimited prefix (such as `feature/` or `devops/`), and replaces any remaining slashes with hyphens. For example, `feature/add-login` exports to `docs/github-issues/add-login/plan.md`, and `devops/ci/cache` exports to `docs/github-issues/ci-cache/plan.md`. A branch without a slash is used unchanged. If there is no plan or the repository/branch cannot be determined, it stops without exporting. `/plan` remains read-only; invoke `/export-plan` separately to save its output.
 

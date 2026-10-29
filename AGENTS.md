@@ -25,6 +25,20 @@ These are global defaults for a direct OpenCode workflow. Repository-level `AGEN
 - Do not expose secrets, credentials, tokens, private keys, or unapproved proprietary data.
 - Do not commit, push, open PRs, or merge unless explicitly asked.
 
+## Documentation Style
+
+- Apply these rules to documentation, plans, issues, PRs, and other written artifacts, regardless of chat mode.
+- Write the shortest complete version for the intended reader.
+- Use direct, plain language and short paragraphs or bullets.
+- State each fact once. Link to existing details instead of repeating them.
+- Include only what readers need to act: purpose, usage, constraints, and essential caveats.
+- Omit introductions, recaps, obvious explanations, and speculative guidance.
+- Add examples only when they clarify non-obvious usage.
+- Use headings only when they improve navigation. Omit empty or unnecessary sections.
+- Preserve exact commands, paths, technical qualifications, and safety warnings.
+- Before finishing, remove repetition and sentences that add no useful information.
+- Follow explicit user requests and required repository templates over these defaults.
+
 ## Python Style
 
 Apply these rules to new or changed Python code:

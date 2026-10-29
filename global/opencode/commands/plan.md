@@ -10,4 +10,4 @@ Read the issue with gh only when the task is tied to a clearly identified GitHub
 
 Plan the smallest complete change that resolves the stated issue. Prefer simple, robust, readable code and existing repository patterns. Avoid unrelated refactors, speculative abstractions, and unnecessary files or phases. Ground the approach in inspected code and identify the affected files and behavior. Keep the plan itself concise, concrete, and proportional to the task.
 
-Present the plan with relevant tests, risks, and open questions. Use the repository's plan format when defined; otherwise use the primary agent's format for non-trivial work and a short checklist for small tasks. Do not modify files or run mutating commands. Stop for approval.
+Follow AGENTS.md documentation rules. Use the repository's plan format when defined; otherwise default to a short checklist covering affected files, behavior changes, and validation. Add separate sections only for material risks, constraints, or unresolved decisions. Use formal plans only when complexity warrants them. Do not modify files or run mutating commands. Stop for approval.
