@@ -157,98 +157,160 @@
       "prompt": "Independently review the completed implementation and provided check results. Focus on concrete correctness, regressions, edge cases, security, concurrency, error handling, API compatibility, unnecessary complexity, and missing tests. Do not modify code or delegate. Report only actionable findings, with file and line references when possible."
     }
   },
-
   "permission": {
     "skill": "allow",
-    // Worktrees live at ~/worktrees/<repo>/<branch>. Last matching rule wins.
-    // These grants do not override bash rules or agent-specific restrictions.
+    "task": "allow",
+    "edit": "allow",
+    "doom_loop": "ask",
+
     "external_directory": {
       "*": "ask",
-      "~/worktrees/**": "allow"
+      "~/worktrees/**": "allow",
+      "/tmp/opencode/**": "allow"
     },
-    "edit": {
-      "*": "allow",
-      "~/worktrees/**": "allow"
-    },
-  "bash": {
-    "*": "ask",
 
-    "git *": "allow",
-    "grep *": "allow",
-    "ls *": "allow",
-    "pwd": "allow",
+    "bash": {
+      "*": "ask",
 
-    "uv *": "allow",
-    "pytest *": "allow",
-    "ruff *": "allow",
+      // Inspection
+      "pwd": "allow",
+      "ls": "allow",
+      "ls *": "allow",
+      "grep *": "allow",
+      "rg *": "allow",
 
-    // Frontend checks
-    "pnpm run build": "allow",
-    "pnpm run ci": "allow",
-    "pnpm run type-check": "allow",
-    "pnpm lint": "allow",
-    "pnpm type-check": "allow",
-    "pnpm --dir frontend run lint": "allow",
-    "pnpm --dir frontend run type-check": "allow",
-    "pnpm --dir frontend run ci": "allow",
-    "pnpm --dir frontend run format:check": "allow",
-    "make frontend-lint": "allow",
-    "make frontend-build": "allow",
+      // Python checks: no blanket uv grant
+      "pytest": "allow",
+      "pytest *": "allow",
+      "ruff *": "allow",
+      "uv run pytest": "allow",
+      "uv run pytest *": "allow",
+      "uv run ruff *": "allow",
+      "uv run ty check": "allow",
+      "uv run ty check *": "allow",
 
-    // Backend and repository checks
-    "make help": "allow",
-    "make install": "allow",
-    "make install-skills": "allow",
-    "make install-commands": "allow",
-    "make refresh-models": "allow",
-    "make update-all": "allow",
-    "make update-opencode": "allow",
-    "make update-livai-models": "allow",
-    "make update-agents": "allow",
-    "make update-permissions": "allow",
-    "make update-agents-md": "allow",
-    "make update-skills": "allow",
-    "make update-commands": "allow",
-    "make update-skills-commands": "allow",
-    "make install-nersc-rules": "allow",
-    "make uninstall-nersc-rules": "allow",
-    "make test": "allow",
-    "make structure-test": "allow",
-    "make backend-test": "allow",
-    "make pre-commit-run": "allow",
-    "uv run pytest *": "allow",
-    "uv run ruff *": "allow",
-    "uv run ty check": "allow",
+      // Frontend checks
+      "pnpm run build": "allow",
+      "pnpm run ci": "allow",
+      "pnpm run type-check": "allow",
+      "pnpm lint": "allow",
+      "pnpm type-check": "allow",
+      "pnpm --dir frontend run lint": "allow",
+      "pnpm --dir frontend run type-check": "allow",
+      "pnpm --dir frontend run ci": "allow",
+      "pnpm --dir frontend run format:check": "allow",
+      "make frontend-lint": "allow",
+      "make frontend-build": "allow",
 
-    // Git inspection and intended PR workflow
-    "git status *": "allow",
-    "git diff *": "allow",
-    "git show *": "allow",
-    "git log *": "allow",
-    "git branch *": "allow",
-    "git remote *": "allow",
-    "git add *": "allow",
-    "git commit *": "allow",
-    "git push *": "allow",
-    "git ls-remote *": "allow",
+      // Repository checks
+      "make help": "allow",
+      "make test": "allow",
+      "make structure-test": "allow",
+      "make backend-test": "allow",
+      "make pre-commit-run": "allow",
 
-    // GitHub issue and PR workflow
-    "gh label list *": "allow",
-    "gh issue comment *": "allow",
-    "gh issue create *": "allow",
-    "gh issue list *": "allow",
-    "gh issue edit *": "allow",
-    "gh issue view *": "allow",
-    "gh pr comment *": "allow",
-    "gh pr create *": "allow",
-    "gh pr edit *": "allow",
-    "gh pr list *": "allow",
-    "gh pr view *": "allow",
-    "gh repo view *": "allow",
-    "gh api *": "allow",
+      // Trusted maintenance
+      "make install-skills": "allow",
+      "make install-commands": "allow",
+      "make refresh-models": "allow",
+      "make update-opencode": "allow",
+      "make update-livai-models": "allow",
+      "make update-agents-md": "allow",
+      "make update-skills": "allow",
+      "make update-commands": "allow",
+      "make update-skills-commands": "allow",
 
-    "curl *": "ask",
-    "rm *": "deny"
+      // Approval for broad installation and agent/permission changes
+      "make install": "ask",
+      "make update-all": "ask",
+      "make update-agents": "ask",
+      "make update-permissions": "ask",
+      "make install-nersc-rules": "ask",
+      "make uninstall-nersc-rules": "ask",
+
+      // Conda inspection and activation
+      "conda info": "allow",
+      "conda info *": "allow",
+      "conda list": "allow",
+      "conda list *": "allow",
+      "conda search *": "allow",
+      "conda env list": "allow",
+      "conda env list *": "allow",
+      "conda env export": "allow",
+      "conda env export *": "allow",
+      "conda activate *": "allow",
+      "conda deactivate": "allow",
+
+      // Trusted environment management
+      "conda create *": "allow",
+      "conda install *": "allow",
+      "conda update *": "allow",
+      "conda env create *": "allow",
+      "conda env update *": "allow",
+
+      // Arbitrary execution, removal, and configuration
+      "conda run *": "ask",
+      "conda remove *": "ask",
+      "conda uninstall *": "ask",
+      "conda env remove *": "ask",
+      "conda clean *": "ask",
+      "conda config *": "ask",
+      "conda init": "ask",
+      "conda init *": "ask",
+
+      // Git inspection: no blanket git grant
+      "git status": "allow",
+      "git status *": "allow",
+      "git diff": "allow",
+      "git diff *": "allow",
+      "git show": "allow",
+      "git show *": "allow",
+      "git log": "allow",
+      "git log *": "allow",
+      "git branch": "allow",
+      "git branch --list": "allow",
+      "git branch --list *": "allow",
+      "git branch --show-current": "allow",
+      "git remote": "allow",
+      "git remote -v": "allow",
+      "git remote get-url *": "allow",
+      "git ls-remote": "allow",
+      "git ls-remote *": "allow",
+      "git worktree list": "allow",
+      "git worktree list *": "allow",
+
+      // Intended autonomous publishing workflow
+      "git add *": "allow",
+      "git commit": "allow",
+      "git commit *": "allow",
+      "git push": "allow",
+      "git push *": "allow",
+
+      // GitHub inspection
+      "gh label list": "allow",
+      "gh label list *": "allow",
+      "gh issue list": "allow",
+      "gh issue list *": "allow",
+      "gh issue view *": "allow",
+      "gh pr list": "allow",
+      "gh pr list *": "allow",
+      "gh pr view *": "allow",
+      "gh repo view": "allow",
+      "gh repo view *": "allow",
+
+      // Intended GitHub writes
+      "gh issue comment *": "allow",
+      "gh issue create *": "allow",
+      "gh issue edit *": "allow",
+      "gh pr comment *": "allow",
+      "gh pr create *": "allow",
+      "gh pr edit *": "allow",
+
+      // General API access and direct deletion
+      "gh api *": "ask",
+      "curl *": "ask",
+      "rm": "deny",
+      "rm *": "deny"
+    }
   }
-}
 }
