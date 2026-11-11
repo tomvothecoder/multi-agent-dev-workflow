@@ -7,6 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CORE_CONFIG_HOME="$(mktemp -d)"
 trap 'rm -rf "$CORE_CONFIG_HOME"' EXIT
 CORE_CONFIG_DIR="$CORE_CONFIG_HOME/custom-opencode"
+export CLAUDE_CONFIG_DIR="$CORE_CONFIG_HOME/custom-claude"
 CORE_CONFIG="$CORE_CONFIG_DIR/opencode.jsonc"
 # Keep model refresh checks deterministic and independent of network/authentication.
 mkdir -p "$CORE_CONFIG_HOME/bin"
@@ -34,10 +35,10 @@ for skill in explore review; do
   cmp -s "$ROOT/global/opencode/skills/$skill/SKILL.md" "$CORE_CONFIG_DIR/skills/$skill/SKILL.md"
 done
 
-# User-owned OpenCode instructions are created and refreshed independently.
+# Full installation includes instructions; explicit sync remains idempotent.
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents-md >"$CORE_CONFIG_HOME/agents-output"
 cmp -s "$ROOT/AGENTS.md" "$CORE_CONFIG_DIR/AGENTS.md"
-rg -Fq "Updated OpenCode instructions from the AGENTS.md template: $CORE_CONFIG_DIR/AGENTS.md" "$CORE_CONFIG_HOME/agents-output"
+rg -Fq "OpenCode instructions already match the template: $CORE_CONFIG_DIR/AGENTS.md" "$CORE_CONFIG_HOME/agents-output"
 printf 'outdated instructions\n' > "$CORE_CONFIG_DIR/AGENTS.md"
 chmod 600 "$CORE_CONFIG_DIR/AGENTS.md"
 HOME="$CORE_CONFIG_HOME" OPENCODE_CONFIG_DIR="$CORE_CONFIG_DIR" make -C "$ROOT" update-agents-md

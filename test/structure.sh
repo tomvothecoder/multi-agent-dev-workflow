@@ -133,11 +133,10 @@ test ! -e "$ROOT/global/uninstall-global-agent-workflow.sh"
 
 # The template is JSONC; all comments occupy their own lines.
 sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
-  .permission.bash["make install-commands"] == "allow" and
-  .permission.external_directory == {"*":"ask","~/worktrees/**":"allow"} and
-  (.permission.external_directory | keys_unsorted == ["*", "~/worktrees/**"]) and
-  .permission.edit == {"*":"allow","~/worktrees/**":"allow"} and
-  (.permission.edit | keys_unsorted == ["*", "~/worktrees/**"]) and
+  .permission.bash["make install-opencode-commands"] == "allow" and
+  .permission.external_directory == {"*":"ask","~/worktrees/**":"allow","/tmp/opencode/**":"allow"} and
+  (.permission.external_directory | keys_unsorted == ["*", "~/worktrees/**", "/tmp/opencode/**"]) and
+  .permission.edit == "allow" and
   .permission.bash["*"] == "ask" and
   .permission.bash["rm *"] == "deny" and
   (. as $config | ["explorer", "livai-explorer", "reviewer"] | all(. as $agent |
@@ -222,7 +221,8 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.reviewer.permission.task == "deny" and
   .agent.reviewer.permission.skill == {"*":"deny","review":"allow"} and
   .agent.reviewer.permission.bash["git diff*"] == "allow" and
-  (. as $config | ["make help", "make install", "make install-skills", "make install-commands", "make refresh-models", "make update-all", "make update-opencode", "make update-livai-models", "make update-agents", "make update-permissions", "make update-agents-md", "make update-skills", "make update-commands", "make update-skills-commands", "make install-nersc-rules", "make uninstall-nersc-rules", "make test", "make structure-test"] | all(. as $command | $config.permission.bash[$command] == "allow")) and
+  (. as $config | ["make help", "make install-opencode-skills", "make install-opencode-commands", "make refresh-models", "make update-opencode", "make update-livai-models", "make update-opencode-instructions", "make update-opencode-skills", "make update-opencode-commands", "make test", "make structure-test"] | all(. as $command | $config.permission.bash[$command] == "allow")) and
+  (. as $config | ["make install", "make install-skills", "make install-commands", "make update-all", "make update-agents-md", "make update-skills", "make update-commands", "make update-skills-commands", "make update-agents", "make update-permissions", "make install-nersc-rules", "make uninstall-nersc-rules"] | all(. as $command | $config.permission.bash[$command] == "ask")) and
   (. as $config | ["make install-opencode", "make install-opencode-config", "make update-opencode-sections"] | all(. as $command | $config.permission.bash | has($command) | not))
 ' >/dev/null
 
@@ -237,7 +237,7 @@ done
 for target in update-all update-skills update-commands update-skills-commands install-lazygit setup-lazygit lazygit-test; do
   rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"
 done
-for target in install-opencode install-opencode-config update-opencode-sections; do
+for target in install-opencode-config update-opencode-sections; do
   if make -n -C "$CHECK_DIR" "$target" >"$CHECK_DIR/error" 2>&1; then exit 1; fi
   if rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"; then exit 1; fi
 done
@@ -301,8 +301,15 @@ test "$*" = update-if-installed
 printf 'update-caveman\n' >> "$UPDATE_TEST_LOG"
 test "${UPDATE_FAIL_STEP:-}" != update-caveman
 EOF
+cat > "$CHECK_DIR/global/install-claude-config.sh" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+test "$*" = update-all
+printf 'update-claude\n' >> "$UPDATE_TEST_LOG"
+test "${UPDATE_FAIL_STEP:-}" != update-claude
+EOF
 # A parallel outer Make must still execute each update exactly once, in order.
-steps=(upgrade 'models --refresh' sync agents-md update-skills update-commands update-caveman)
+steps=(upgrade 'models --refresh' sync agents-md update-skills update-commands update-caveman update-claude)
 : > "$CHECK_DIR/log"
 PATH="$CHECK_DIR:$PATH" UPDATE_TEST_LOG="$CHECK_DIR/log" make -j4 -C "$CHECK_DIR" update-all >/dev/null
 printf '%s\n' "${steps[@]}" > "$CHECK_DIR/expected"

@@ -123,7 +123,12 @@ for skill in "${SKILLS[@]}"; do
 done
 
 if [ "$MODE" = all ]; then
-  printf 'Installed missing OpenCode configuration, skills, and commands in: %s\n' "$OPENCODE_CONFIG_DIR"
+  if [ -e "$OPENCODE_CONFIG_DIR/AGENTS.md" ] || [ -L "$OPENCODE_CONFIG_DIR/AGENTS.md" ]; then
+    printf 'Preserved existing OpenCode instructions: %s\n' "$OPENCODE_CONFIG_DIR/AGENTS.md"
+  else
+    "$ROOT/sync-opencode-agents-md.sh"
+  fi
+  printf 'Installed missing OpenCode configuration, instructions, skills, and commands in: %s\n' "$OPENCODE_CONFIG_DIR"
   printf 'OpenCode configuration: %s\n' "$DESTINATION"
   printf 'OpenCode instructions path: %s\n' "$OPENCODE_CONFIG_DIR/AGENTS.md"
 elif [ "$UPDATE" -eq 1 ]; then
