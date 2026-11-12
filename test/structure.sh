@@ -95,12 +95,12 @@ rg -Fq 'approved plan' "$ROOT/global/opencode/commands/implement.md"
 for instruction in \
   'This command authorizes committing each verified logical group of changes.' \
   'Implement the plan in ordered phases, one logical group at a time.' \
-  'Run focused tests and applicable formatting/lint checks before each commit' \
+  'Run focused tests and changed-file formatting/lint checks before each commit' \
   'if checks fail, fix the issue and rerun them before committing.' \
   'Before each commit, inspect git status, git diff, and git log --oneline -10.' \
   'Stage only intended changes, never secrets or unrelated user changes' \
   'Honor additional user instructions that restrict committing.' \
-  'Run broader validation after all phases and report any failures plainly.' \
+  'Run the full suite and repository-wide checks once after all phases and report any failures plainly.' \
   'Do not push or open a PR.'; do
   rg -Fq "$instruction" "$ROOT/global/opencode/commands/implement.md"
 done
@@ -185,8 +185,9 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
     "follow existing repository patterns and formatting conventions",
     "add or update tests for behavior changes",
     "Implement one logical group at a time",
-    "Run focused tests and applicable formatting/lint checks before each authorized commit",
-    "run broader validation after all phases",
+    "Run focused tests and changed-file formatting/lint checks before each authorized commit",
+    "run the full suite and repository-wide checks once after all phases",
+    "Run one command per bash call; use the bash workdir parameter instead of cd; do not pipe output to head, tail, or grep.",
     "Commit only when explicitly authorized by the user or invoked command",
     "implementation approval alone does not authorize commits",
     "Before each commit, inspect git status, git diff, and git log --oneline -10",
