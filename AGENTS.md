@@ -19,7 +19,7 @@ These are global defaults for a direct OpenCode workflow. Repository-level `AGEN
 - Follow existing project patterns.
 - Do not edit generated files unless explicitly required.
 - Prefer deterministic tests and CI over agent agreement.
-- Use repository `Makefile` targets for full test, lint, and QA runs instead of one-off commands with tools such as `uv`, `python`, or `conda`.
+- For full test, lint, and QA runs, use matching repository `Makefile` targets when they exist; otherwise use the commands documented in the repository (for example, README, CONTRIBUTING, `pyproject.toml`, or `package.json` scripts). Do not guess at targets.
 - While iterating, run only tests and lint/format checks for changed code. For a targeted run through a `make` test target, pass pytest options with `PYTEST_ADDOPTS` (for example, `-k <name> --no-cov`); otherwise run direct commands on the changed tests or files (for example, `pre-commit run --files <files>`).
 - Run the full suite and repository-wide checks (for example, `make pre-commit-run`) once, after the final change.
 - Do not rerun a passing check unless code it covers changed. After a full-run failure, rerun only the failing tests until fixed, then do one final full run.
