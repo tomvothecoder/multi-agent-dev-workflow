@@ -223,7 +223,12 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.reviewer.permission.bash["git diff*"] == "allow" and
   (. as $config | ["make help", "make install-opencode-skills", "make install-opencode-commands", "make refresh-models", "make update-opencode", "make update-livai-models", "make update-opencode-instructions", "make update-opencode-skills", "make update-opencode-commands", "make test", "make structure-test"] | all(. as $command | $config.permission.bash[$command] == "allow")) and
   (. as $config | ["make install", "make install-skills", "make install-commands", "make update-all", "make update-agents-md", "make update-skills", "make update-commands", "make update-skills-commands", "make update-agents", "make update-permissions", "make install-nersc-rules", "make uninstall-nersc-rules"] | all(. as $command | $config.permission.bash[$command] == "ask")) and
-  (. as $config | ["make install-opencode", "make install-opencode-config", "make update-opencode-sections"] | all(. as $command | $config.permission.bash | has($command) | not))
+  (. as $config | ["make install-opencode", "make install-opencode-config", "make update-opencode-sections"] | all(. as $command | $config.permission.bash | has($command) | not)) and
+  (. as $config | ["cd *", "cat *", "head *", "tail *", "wc *", "which *", "echo *", "sort *", "sed -n *", "find *", "pre-commit run --files *", "uv run pre-commit run --files *", "PYTEST_ADDOPTS=* pytest *", "PYTEST_ADDOPTS=* uv run pytest *", "PYTEST_ADDOPTS=* make test", "PYTEST_ADDOPTS=* make backend-test"] | all(. as $command | $config.permission.bash[$command] == "allow")) and
+  (.permission.bash | keys_unsorted | index("find * -delete*") > index("find *")) and
+  (.permission.bash | keys_unsorted | index("find * -exec*") > index("find *")) and
+  .permission.bash["find * -delete*"] == "ask" and
+  .permission.bash["find * -exec*"] == "ask"
 ' >/dev/null
 
 # Verify upgrade ordering and failure handling without upgrading the host.

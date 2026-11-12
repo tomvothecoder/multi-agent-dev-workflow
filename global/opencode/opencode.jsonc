@@ -178,6 +178,19 @@
       "ls *": "allow",
       "grep *": "allow",
       "rg *": "allow",
+      // Read-only helpers often chained with allowed commands
+      "cd *": "allow",
+      "cat *": "allow",
+      "head *": "allow",
+      "tail *": "allow",
+      "wc *": "allow",
+      "which *": "allow",
+      "echo *": "allow",
+      "sort *": "allow",
+      "sed -n *": "allow",
+      "find *": "allow",
+      "find * -delete*": "ask",
+      "find * -exec*": "ask",
 
       // Python checks: no blanket uv grant
       "pytest": "allow",
@@ -188,6 +201,13 @@
       "uv run ruff *": "allow",
       "uv run ty check": "allow",
       "uv run ty check *": "allow",
+      "pre-commit run --files *": "allow",
+      "uv run pre-commit run --files *": "allow",
+      // Targeted pytest options through allowed test commands
+      "PYTEST_ADDOPTS=* pytest *": "allow",
+      "PYTEST_ADDOPTS=* uv run pytest *": "allow",
+      "PYTEST_ADDOPTS=* make test": "allow",
+      "PYTEST_ADDOPTS=* make backend-test": "allow",
 
       // Frontend checks
       "pnpm run build": "allow",
