@@ -282,7 +282,8 @@ This profile is independent of the agent configuration.
 ## Verification
 
 ```bash
-make test
+make test      # Fast: templates and Makefile
+make test-all  # After changing global/*.sh, *.rb, or *.py
 # Focused installer/configuration checks (mocked downloads; no host install):
 make lazygit-test
 make caveman-test

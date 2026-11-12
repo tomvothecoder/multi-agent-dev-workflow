@@ -37,7 +37,8 @@ help:
 		'  install-nersc-rules   Install the optional NERSC filesystem rules profile' \
 		'  uninstall-nersc-rules Remove the NERSC filesystem rules profile' \
 		'' 'Validation:' \
-		'  test                  Run lifecycle and structure checks' \
+		'  test                  Run fast template and Makefile checks' \
+		'  test-all              Run all checks, including isolated installer lifecycles' \
 		'  lazygit-test          Run isolated Lazygit installer and config checks' \
 		'  caveman-test          Run isolated Caveman lifecycle checks' \
 		'  claude-test           Run isolated Claude and parallel lifecycle checks' \
@@ -171,9 +172,12 @@ uninstall-nersc-rules:
 
 # --- Validation ---------------------------------------------------------------
 
-.PHONY: test structure-test lazygit-test claude-test
+.PHONY: test test-all structure-test lazygit-test claude-test
 
 test:
+	@./test/structure.sh
+
+test-all:
 	@./test/lifecycle.sh
 	@./test/structure.sh
 	@$(MAKE) claude-test

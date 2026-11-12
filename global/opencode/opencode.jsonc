@@ -225,6 +225,7 @@
       // Repository checks
       "make help": "allow",
       "make test": "allow",
+      "make test-all": "allow",
       "make structure-test": "allow",
       "make backend-test": "allow",
       "make pre-commit-run": "allow",
