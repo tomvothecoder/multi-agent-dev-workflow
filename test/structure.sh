@@ -85,6 +85,7 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent["livai-explorer"].permission.skill == {"*":"deny","explore":"allow"} and
   .agent.reviewer.mode == "subagent" and
   .agent.reviewer.model == "github-copilot/claude-opus-5.5" and
+  .agent.reviewer.variant == "high" and
   .agent.reviewer.permission.edit == "deny" and
   .agent.reviewer.permission.task == "deny" and
   .agent.reviewer.permission.skill == {"*":"deny","review":"allow"} and
