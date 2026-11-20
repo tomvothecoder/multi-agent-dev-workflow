@@ -63,7 +63,7 @@ Claude Caveman integration, NERSC profile integration, and cloud/Cowork distribu
 ```mermaid
 flowchart LR
     A[livai-primary: plan, implement, test] --> B[relevant checks]
-    B --> C{Substantial change?}
+    B --> C{Review requested or risky?}
     C -- no --> F[human approval]
     C -- yes --> D[reviewer: one read-only pass]
     D --> E[livai-primary: accepted fixes and checks]
@@ -79,7 +79,7 @@ flowchart LR
 | `livai-primary`  | `livai/gpt-6.1-sol`, medium            | Default primary: plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only LivAI Explorer or Reviewer.                     |
 | `livai-explorer` | `livai/gpt-6-luna`, low                | Targeted repository investigation for LivAI Primary.                                                       | Read/search only; no shell, edits, web access, or delegation.                            |
 | `primary`        | `openai/gpt-6.1-sol`, medium           | OpenAI-backed primary: plans, implements, tests, and fixes.                                                | Normal development access; may call only Explorer or Reviewer.                           |
-| `reviewer`       | `github-copilot/claude-opus-5.5`, high | One independent review after substantial changes.                                                          | Read-only; may inspect `git status`, `git diff`, and `git show`; no edits or delegation. |
+| `reviewer`       | `github-copilot/claude-opus-5.5`, high | One independent review when requested or for risky changes.                                                | Read-only; may inspect `git status`, `git diff`, and `git show`; no edits or delegation. |
 
 The existing `primary` and `explorer` agents remain available as the OpenAI-backed workflow. Select `primary` explicitly when you want that path. GitHub Copilot remains the reviewer for both workflows. If it is unavailable, configure the `reviewer` model as `livai/gpt-6.1-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
 
@@ -96,7 +96,7 @@ Both primary agents answer questions and review-only requests without editing. F
 
 Use the repository's plan format when defined. Otherwise, default to a short checklist covering affected files, behavior changes, and validation. Add sections only for material risks, constraints, or unresolved decisions; use formal plans only when complexity warrants them. All written artifacts follow the [documentation style rules](AGENTS.md#documentation-style), regardless of chat mode.
 
-After implementation, report **Result** (what changed and the outcome), **Validation** (checks run and their results, plus relevant checks not run and why), and **Remaining issues** (omit if none). State clearly when implementation is incomplete. A plan-only response must not use this results format or imply that checks ran.
+After implementation, they end with a brief summary: what changed, checks run, and relevant checks skipped and why. They state plainly when work is incomplete and never imply checks ran when they did not.
 
 ## Worktree directories
 
