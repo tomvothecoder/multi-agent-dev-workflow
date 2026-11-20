@@ -1,62 +1,6 @@
-# Simple OpenCode and Claude Code Three-Agent Workflow
+# Simple OpenCode Three-Agent Workflow
 
-This repository provides parallel native OpenCode and Claude Code configurations for software development. Both use shared [AGENTS.md](AGENTS.md) engineering rules, five workflow commands, and focused explorer/reviewer skills. Their configuration files and installations remain separate.
-
-## Parallel installation and updates
-
-Install both tools' workflow files, or select one:
-
-```bash
-make install
-make install-opencode
-make install-claude
-```
-
-`make install` now installs missing configuration, instructions, skills, commands, and agent definitions for **both tools**. Existing files and same-named skill directories are preserved. OpenCode installs to `${OPENCODE_CONFIG_DIR:-$HOME/.config/opencode}`; Claude installs to `${CLAUDE_CONFIG_DIR:-$HOME/.claude}`. Template installation does not install either CLI or authenticate accounts.
-
-| Both tools | OpenCode only | Claude only |
-| --- | --- | --- |
-| `install-skills` | `install-opencode-skills` | `install-claude-skills` |
-| `install-commands` | `install-opencode-commands` | `install-claude-commands` |
-| `update-skills` | `update-opencode-skills` | `update-claude-skills` |
-| `update-commands` | `update-opencode-commands` | `update-claude-commands` |
-| `update-agents-md` | `update-opencode-instructions` | `update-claude-instructions` |
-| `update-all` | `update-opencode-all` | `update-claude-all` |
-
-Prefix each target with `make`. `update-skills-commands` updates skills and commands for both tools. Combined targets run sequentially and stop on failure, including under parallel Make; they do not roll back earlier successful updates.
-
-Explicit updates **overwrite local edits** to managed templates. Back up customizations first. Tool-specific targets never change the other tool's installation. `update-agents`, `update-permissions`, `update-livai-models`, and `update-opencode` retain their existing OpenCode-only behavior. Optional integrations remain separate and opt-in.
-
-The OpenCode permission template now asks approval for combined lifecycle targets and pre-approves only scoped OpenCode template maintenance. Review and merge these permission changes, or run `make update-permissions` to replace your permission section, then restart OpenCode.
-
-### Claude Code setup
-
-1. Install Claude Code using its [official instructions](https://code.claude.com/docs/en/setup).
-2. Run `make install-claude`, or `make install` for both tools.
-3. Start `claude` and use browser sign-in with your Claude Pro account. API-key authentication uses separate API billing, not your subscription.
-4. Restart Claude Code after installation. Check `/context all` for loaded instructions and the `/` menu for workflow commands.
-
-Claude receives `CLAUDE.md`, adjacent `AGENTS.md`, `settings.json`, `agents/{explorer,reviewer}.md`, five `commands/*.md` files, and `skills/{explore,review}/SKILL.md`. `CLAUDE.md` imports the shared rules and supplies the primary workflow. Main conversation acts as primary; both subagents inherit its model and allow only Read, Glob, and Grep. Supply actual diffs and check results when requesting review: reviewer has no shell access. These restrictions intentionally differ from OpenCode's restricted reviewer shell access.
-
-Claude commands retain the [workflow behavior below](#workflow-commands), including commit authorization in `/implement` and publishing authorization in `/draft-pr`. Commands require explicit user invocation and run in the main conversation. Support skills preload into their matching agents and stay hidden from slash menus. Instruction-level delegation rules are not a technical sandbox or exact OpenCode permission equivalent.
-
-`/plan` intentionally replaces Claude's built-in command of the same name. An existing same-named skill takes precedence over a command file; installation preserves such customizations. Check command discovery before relying on the workflow. See [Claude skill precedence](https://code.claude.com/docs/en/skills#resolve-skills-that-share-a-name).
-
-Additional Claude-only targets:
-
-```bash
-make install-claude-agents
-make update-claude-agents
-make update-claude-settings
-```
-
-`update-claude-instructions` refreshes both installed instruction files. `update-claude-all` refreshes all managed Claude files without upgrading the CLI. Settings updates manage only `includeGitInstructions: false`, so repository workflow rules replace Claude's built-in Git guidance. They preserve unrelated JSON keys, including permissions, hooks, and authentication settings; JSON formatting may change. Installation preserves existing settings unchanged. Invalid JSON or non-object settings stop full installation/update before writes.
-
-Claude updates validate all selected managed paths before writes, reject symlinks and incompatible destinations, preserve file modes, and replace files atomically. Writes are not a multi-file transaction: an I/O failure can leave earlier files updated. Installation preserves existing linked files and skill directories but refuses linked managed directories when writing missing files. No lifecycle command changes credentials, session history, or unrelated files. Do not run concurrent lifecycle commands.
-
-For a custom directory, set `CLAUDE_CONFIG_DIR` for installation, updates, **and Claude Code**. Current Claude versions can read repository `AGENTS.md` directly when no project `CLAUDE.md` takes precedence. Older versions, or projects with their own `CLAUDE.md`, can import shared rules with `@AGENTS.md` in that project file. Global `CLAUDE.md` imports only its adjacent global rules. See [Claude instruction loading](https://code.claude.com/docs/en/memory#agents-md).
-
-Claude Caveman integration, NERSC profile integration, and cloud/Cowork distribution are outside this setup.
+Install the OpenCode workflow with `make install` (alias: `make install-opencode`). It adds missing configuration, instructions, skills, and commands to `${OPENCODE_CONFIG_DIR:-$HOME/.config/opencode}` without replacing existing files or same-named skill directories. It does not install the CLI or authenticate accounts.
 
 ## Workflow
 
@@ -131,7 +75,7 @@ Approve the plan before invoking `/implement`. This command authorizes commits f
 
 `/export-plan` saves the latest generated plan unchanged, creates missing directories, and replaces any previous export. It uses the current branch, removes its first slash-delimited prefix (such as `feature/` or `devops/`), and replaces any remaining slashes with hyphens. For example, `feature/add-login` exports to `docs/github-issues/add-login/plan.md`, and `devops/ci/cache` exports to `docs/github-issues/ci-cache/plan.md`. A branch without a slash is used unchanged. If there is no plan or the repository/branch cannot be determined, it stops without exporting. `/plan` remains read-only; invoke `/export-plan` separately to save its output.
 
-In OpenCode, commands use the currently selected agent. Select `livai-primary` or `primary`; the read-only `reviewer` cannot implement fixes or publish a PR. In Claude, use the normal main session. `/review-again` is a user-requested direct review/fix pass, not another delegated reviewer invocation. GitHub operations require `gh` authentication and repository access.
+In OpenCode, commands use the currently selected agent. Select `livai-primary` or `primary`; the read-only `reviewer` cannot implement fixes or publish a PR. `/review-again` is a user-requested direct review/fix pass, not another delegated reviewer invocation. GitHub operations require `gh` authentication and repository access.
 
 For an existing installation, install the commands without changing the configuration:
 
@@ -211,7 +155,7 @@ Run every OpenCode update with one command:
 make update-opencode-all
 ```
 
-This runs `update-opencode`, `update-opencode-instructions`, `update-opencode-skills`, and `update-opencode-commands` sequentially, then refreshes Caveman only if installed by this repository. It stops on the first failure even with parallel Make enabled. `update-opencode` already covers the model refresh and LivAI models, agents, and permissions, so these updates are not repeated. Review or back up customizations first: this replaces the managed configuration sections, `AGENTS.md` (preserving its Caveman activation block), skills, and commands. It does not enable optional integrations or configure Lazygit. Generic `update-all` then runs `update-claude-all`.
+This target and its alias `update-all` run `update-opencode`, `update-opencode-instructions`, `update-opencode-skills`, and `update-opencode-commands` sequentially and stop on the first failure. Back up customizations first: this replaces managed configuration sections, `AGENTS.md`, skills, and commands.
 
 `make update-agents` runs `make refresh-models` before updating configuration. If the model refresh fails, the configuration update stops.
 
@@ -226,39 +170,19 @@ make update-opencode-instructions
 
 `make update-opencode` upgrades OpenCode, refreshes models, and syncs all three configuration sections. `make update-opencode-instructions` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; when `provider.livai` is absent, its model section is skipped. All other settings in your `opencode.jsonc` remain unchanged.
 
-## Optional Caveman output styling
-
-Use the repository's minimal installer, **not** Caveman's unified installer:
+## Clean up retired integrations
 
 ```bash
-make install-opencode        # If no OpenCode configuration exists yet
-make install-caveman
-# Restart OpenCode and start a new session.
-make update-caveman          # Refresh only this integration
-make uninstall-caveman       # Remove only this integration
+make uninstall          # Preview
+make uninstall APPLY=1  # Apply after reviewing the preview
 ```
 
-Setup needs Ruby 2.6+ (standard library only), curl, and an existing OpenCode configuration. It downloads Caveman **v3.2.0**, pinned to commit `e20f07e8152a0c0360f58c09e79d30ac94329991`, over HTTPS. Downloaded installer scripts are never executed. The plugin itself runs inside OpenCode; installing it means trusting upstream code. Review the pinned [plugin](https://github.com/JuliusBrussee/caveman/blob/e20f07e8152a0c0360f58c09e79d30ac94329991/src/plugins/opencode/plugin.js) before enabling it. Bumping the pin is a repository change, not an automatic upgrade to `latest`.
+Requires Ruby 2.6+. Close Claude Code and OpenCode before applying. Use `CLAUDE_CONFIG_DIR` or `OPENCODE_CONFIG_DIR` to select a custom location. Defaults are `$HOME/.claude` and `${XDG_CONFIG_HOME:-$HOME/.config}/opencode`.
 
-Only the four native plugin files, `skills/caveman/SKILL.md`, one plugin registration, and a marker-fenced instruction block are installed. No Cavecrew agents, slash-command files, extra modes, CLI, proxy, MCP, telemetry setup, provider routing, or credentials are added. The plugin reads the ruleset directly; existing skill permissions stay unchanged. It adds response-style system instructions but does not compress or rewrite prompts, tool results, or history. This works independently of provider choice, including LivAI and Copilot.
+- **Claude Code:** Removes files that exactly match retired templates. The old installer did not track ownership, so review each match before applying. Review modified files and settings manually; for example, `includeGitInstructions: false` may remain in a shared `settings.json`.
+- **Caveman:** Removes the files, registration, and instruction block verified against `.caveman-install.json`. It leaves untracked installs alone and stops on modified or unsafe managed paths. Resolve those conflicts before retrying cleanup or refreshing OpenCode instructions.
 
-Standard Caveman prose is the default unless existing upstream Caveman mode settings override it. This minimal installation supplies only the standard ruleset, not alternate modes. Primary and subagent output should stay concise while retaining required headings, requested detail, technical meaning, and exact code/commands. Output styling is a model instruction, not a guarantee. Upstream uses shared machine-wide mode state in OpenCode, and static global instructions remain active for subagents; use `make uninstall-caveman` for reliable global deactivation rather than relying on a per-session toggle.
-
-`OPENCODE_CONFIG_DIR` must match the plugin's runtime path: `${XDG_CONFIG_HOME:-$HOME/.config}/opencode`. Symlinked ancestors such as `/home` are supported; the OpenCode configuration directory itself and managed paths inside it must not be symlinks. For a custom location, use the same environment for setup, updates, **and OpenCode**:
-
-```bash
-export XDG_CONFIG_HOME="$HOME/custom-config"
-export OPENCODE_CONFIG_DIR="$XDG_CONFIG_HOME/opencode"
-make install
-make install-caveman
-opencode
-```
-
-Setup requires exactly one `opencode.jsonc` or `opencode.json`, preserves comments and unrelated settings, and saves a private first-install `.caveman-config-backup`. `.caveman-install.json` records ownership and digests. Repeat installation is a no-op. Updates and uninstall refuse missing/modified managed files, changed activation blocks, symlinks, or unowned conflicts; restore the recorded version before retrying. Existing upstream installs are not silently adopted. Unrelated and extra files are preserved. Uninstall keeps the configuration backup and runtime history, removes known mode flags, and never touches other agents. File writes are atomic with rollback on ordinary write failures, not a crash-proof transaction; do not run OpenCode during lifecycle changes.
-
-`make update-agents-md` preserves exactly one valid Caveman instruction block; Ruby is required only when that block exists. `make update-all` refreshes Caveman only when its repository ownership record exists, with no new prerequisites or path restrictions for users who never installed it. `make install` remains opt-in with respect to Caveman. A killed lifecycle process may leave `.caveman-install.lock/`; remove that directory only after confirming no lifecycle command is running.
-
-After restarting, test a concise explanation, a code/command response, and a request for detailed prose with both primary and subagent workflows.
+Cleanup preserves CLI binaries, credentials, history, backups, symlinks, and unrelated configuration.
 
 ## Optional Lazygit setup
 
@@ -299,21 +223,16 @@ make test      # Fast: templates and Makefile
 make test-all  # After changing global/*.sh, *.rb, or *.py
 # Focused installer/configuration checks (mocked downloads; no host install):
 make lazygit-test
-make caveman-test
-make claude-test
-# Optional: actual pinned downloads + isolated plugin hooks (requires Node.js):
-CAVEMAN_UPSTREAM_TEST=1 make caveman-test
+make uninstall-test
 ```
 
 ## Repository layout
 
 - `global/opencode/opencode.jsonc`: user-owned native OpenCode template.
-- `global/claude/`: native Claude instructions, settings, agents, commands, and skills.
-- `global/install-claude-config.sh`, `global/manage-claude-config.rb`: scoped Claude installation and updates (Ruby standard library only).
 - `global/opencode/skills/`: the two focused OpenCode skills.
 - `global/opencode/commands/`: issue planning, plan export, implementation, optional review/fix, and human-gated draft PR prompts.
 - `global/install-opencode-config.sh`: repeatable missing-component installer and explicit skill/command updater.
 - `global/install-lazygit.sh`, `global/setup-lazygit.sh`, `global/setup-lazygit-config.rb`: optional Lazygit installation and comment-preserving worktree configuration.
-- `global/install-caveman.sh`, `global/manage-caveman.rb`: optional, scoped Caveman output-plugin lifecycle and instruction preservation.
+- `global/uninstall-legacy.rb`, `global/manage-caveman.rb`: cleanup for retired integrations.
 - `profiles/nersc/`: optional filesystem instruction profile.
 - `test/`: configuration and lifecycle checks.

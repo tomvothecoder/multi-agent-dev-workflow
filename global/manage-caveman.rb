@@ -1,26 +1,19 @@
 #!/usr/bin/env ruby
-# Install only the upstream OpenCode voice plugin; never run its unified installer.
+# Remove only the legacy OpenCode integration recorded by this repository.
 require 'json'
 require 'digest'
 require 'fileutils'
 require 'tempfile'
-require 'tmpdir'
 
 module Caveman
-  RELEASE = 'v3.2.0'
-  REVISION = 'e20f07e8152a0c0360f58c09e79d30ac94329991'
   PLUGIN = './plugins/caveman/plugin.js'
   BEGIN_MARK = '<!-- caveman-begin -->'
   END_MARK = '<!-- caveman-end -->'
   MANIFEST = '.caveman-install.json'
-  SOURCES = {
-    'plugins/caveman/plugin.js' => 'src/plugins/opencode/plugin.js',
-    'plugins/caveman/package.json' => 'src/plugins/opencode/package.json',
-    'plugins/caveman/caveman-config.cjs' => 'src/hooks/caveman-config.js',
-    'plugins/caveman/caveman-parse.cjs' => 'src/hooks/caveman-parse.js',
-    'skills/caveman/SKILL.md' => 'skills/caveman/SKILL.md'
-  }.freeze
-  SAFEGUARDS = 'Preserve required headings, user-requested detail and formats, technical qualifications, and safety explanations. Never rewrite user prompts or tool payloads. Code, commands, paths, errors, numbers, units, and structured output stay exact. Existing agent roles and permissions remain unchanged.'
+  MANAGED_FILES = %w[
+    plugins/caveman/plugin.js plugins/caveman/package.json plugins/caveman/caveman-config.cjs
+    plugins/caveman/caveman-parse.cjs skills/caveman/SKILL.md
+  ].freeze
 
   # Parse JSONC while retaining token offsets for surgical, comment-preserving edits.
   class Document
@@ -98,42 +91,23 @@ module Caveman
     text
   end
 
-  def self.plugin_config(text, remove: false)
-    doc = Document.new(text)
-    array = doc.root[:children]['plugin']
-    unless array
-      raise 'Managed Caveman plugin registration is missing' if remove
-      children = doc.root[:children].values
-      changes = [[doc.root[:closing], doc.root[:closing], "\n  \"plugin\": [#{JSON.generate(PLUGIN)}]\n"]]
-      last = children.last
-      changes << [last[:finish], last[:finish], ','] if last && !last[:comma]
-      return edit(text, changes)
-    end
+  def self.remove_plugin(text)
+    array = Document.new(text).root[:children]['plugin']
+    raise 'Managed Caveman plugin registration is missing' unless array
     raise 'OpenCode plugin must be an array of strings' unless array[:value].is_a?(Array) && array[:value].all? { |item| item.is_a?(String) }
-    # Absolute/file URLs pointing at the same plugin are conflicts, not a second registration.
+    # Absolute/file URLs pointing at the same plugin are conflicts.
     matches = array[:children].select do |item|
       normalized = item[:value].tr('\\', '/')
       normalized == PLUGIN || normalized.end_with?('/plugins/caveman/plugin.js') ||
         normalized == 'caveman-opencode-plugin'
     end
-    if remove
-      raise 'Managed Caveman plugin registration changed' unless matches.length == 1 && matches.first[:value] == PLUGIN
-      item = matches.first
-      changes = [[item[:start], item[:finish], '']]
-      comma = item[:comma]
-      unless comma
-        index = array[:children].index(item)
-        comma = array[:children][index - 1][:comma] if index > 0
-      end
-      changes << [comma[:start], comma[:finish], ''] if comma
-      edit(text, changes)
-    else
-      raise 'Caveman plugin is already registered outside this installer' unless matches.empty?
-      last = array[:children].last
-      changes = [[array[:closing], array[:closing], " #{JSON.generate(PLUGIN)}"]]
-      changes << [last[:finish], last[:finish], ','] if last && !last[:comma]
-      edit(text, changes)
-    end
+    raise 'Managed Caveman plugin registration changed' unless matches.length == 1 && matches.first[:value] == PLUGIN
+    item = matches.first
+    changes = [[item[:start], item[:finish], '']]
+    index = array[:children].index(item)
+    comma = item[:comma] || (array[:children][index - 1][:comma] if index > 0)
+    changes << [comma[:start], comma[:finish], ''] if comma
+    edit(text, changes)
   end
 
   def self.block_span(text)
@@ -142,13 +116,6 @@ module Caveman
     return nil if begins.empty? && ends.empty?
     raise 'Malformed or duplicate Caveman instruction markers' unless begins.length == 1 && ends.length == 1 && begins.first < ends.first
     [begins.first, ends.first + END_MARK.length]
-  end
-
-  def self.replace_block(text, block)
-    span = block_span(text)
-    return text[0...span[0]] + block + text[span[1]..-1] if span
-    return text if block.empty?
-    text + (text.empty? || text.end_with?("\n\n") ? '' : "\n\n") + block + "\n"
   end
 
   def self.safe_path(path, root:, directory: false)
@@ -224,7 +191,7 @@ module Caveman
     path = safe_path(File.join(root, MANIFEST), root: root)
     return nil unless File.exist?(path)
     state = JSON.parse(File.read(path, encoding: 'UTF-8'))
-    valid = state['schema'] == 1 && state['files'].is_a?(Hash) && state['files'].keys.sort == SOURCES.keys.sort &&
+    valid = state.is_a?(Hash) && state['schema'] == 1 && state['files'].is_a?(Hash) && state['files'].keys.sort == MANAGED_FILES.sort &&
             %w[opencode.json opencode.jsonc].include?(state['config']) &&
             state['files'].values.all? { |value| value.is_a?(String) && value.match?(/\A[0-9a-f]{64}\z/) } &&
             state['block_sha256'].is_a?(String)
@@ -239,142 +206,54 @@ module Caveman
     end
     span = block_span(instructions)
     raise 'Managed Caveman instruction block missing or modified; restore it before continuing' unless span && digest(instructions[span[0]...span[1]]) == state['block_sha256']
+    span
   end
 
-  def self.download
-    raise 'Caveman setup requires curl' unless system('curl', '--version', out: File::NULL, err: File::NULL)
-    payload = {}
-    Dir.mktmpdir('caveman-download-') do |stage|
-      (SOURCES.merge('_rules' => 'src/rules/caveman-activate.md')).each do |relative, source|
-        destination = File.join(stage, File.basename(relative))
-        url = "https://raw.githubusercontent.com/JuliusBrussee/caveman/#{REVISION}/#{source}"
-        ok = system('curl', '--fail', '--silent', '--show-error', '--location', '--proto', '=https', '--proto-redir', '=https', '--connect-timeout', '15', '--max-time', '60', '--output', destination, url)
-        raise "Could not download #{source}; configuration unchanged" unless ok && File.file?(destination) && File.size(destination) > 0
-        payload[relative] = File.binread(destination).force_encoding(Encoding::UTF_8)
-        raise "Invalid UTF-8 payload: #{source}" unless payload[relative].valid_encoding?
-      end
-    end
-    package = JSON.parse(payload.fetch('plugins/caveman/package.json'))
-    raise 'Unexpected upstream plugin package' unless package['name'] == 'caveman-opencode-plugin' && package['type'] == 'module'
-    raise 'Unexpected upstream plugin' unless payload.fetch('plugins/caveman/plugin.js').include?('export const CavemanPlugin')
-    raise 'Unexpected upstream ruleset' unless payload.fetch('skills/caveman/SKILL.md').include?('caveman')
-    payload
-  end
-
-  def self.lifecycle(mode)
-    runtime = File.join(ENV.fetch('XDG_CONFIG_HOME', File.join(Dir.home, '.config')), 'opencode')
-    root = File.expand_path(ENV.fetch('OPENCODE_CONFIG_DIR', runtime))
-    manifest_path = File.join(root, MANIFEST)
-    if mode == 'update-if-installed' && !File.exist?(manifest_path) && !File.symlink?(manifest_path)
-      puts 'Caveman is not managed by this repository; skipped.'
+  def self.uninstall(apply_changes:)
+    xdg = ENV['XDG_CONFIG_HOME']
+    runtime = File.join(xdg.nil? || xdg.empty? ? File.join(Dir.home, '.config') : xdg, 'opencode')
+    configured = ENV['OPENCODE_CONFIG_DIR']
+    root = File.expand_path(configured.nil? || configured.empty? ? runtime : configured)
+    manifest = File.join(root, MANIFEST)
+    unless File.exist?(manifest) || File.symlink?(manifest)
+      puts "No managed Caveman installation found in #{root}."
       return
     end
-    raise 'OPENCODE_CONFIG_DIR must equal $XDG_CONFIG_HOME/opencode (or ~/.config/opencode); use the same XDG_CONFIG_HOME when running OpenCode' unless root == File.expand_path(runtime)
-    safe_path(root, root: root, directory: true)
-    raise "OpenCode configuration directory missing; run make install first: #{root}" unless File.directory?(root)
+
     lock = safe_path(File.join(root, '.caveman-install.lock'), root: root, directory: true)
+    raise "Caveman lifecycle lock exists; check for an active process: #{lock}" if File.exist?(lock)
+    locked = false
     begin
-      Dir.mkdir(lock)
-    rescue Errno::EEXIST
-      raise "Another Caveman lifecycle operation may be active. If none is running, remove the stale lock directory: #{lock}"
-    end
-    begin
+      if apply_changes
+        Dir.mkdir(lock)
+        locked = true
+      end
       state = managed_state(root)
-      if mode == 'update-if-installed' && !state
-        puts 'Caveman is not managed by this repository; skipped.'
+      raise 'Caveman ownership manifest disappeared' unless state
+      configs = %w[opencode.jsonc opencode.json].map { |name| safe_path(File.join(root, name), root: root) }
+      config = configs.select { |path| File.exist?(path) }
+      raise 'Managed OpenCode configuration missing, ambiguous, or renamed' unless config == [File.join(root, state['config'])]
+      config = config.first
+      instructions = safe_path(File.join(root, 'AGENTS.md'), root: root)
+      text = File.read(instructions, encoding: 'UTF-8')
+      start, finish = verify_owned(root, state, text)
+      changes = MANAGED_FILES.map { |relative| [File.join(root, relative), nil] }
+      changes += [[config, remove_plugin(File.read(config, encoding: 'UTF-8'))],
+                  [instructions, text[0...start] + text[finish..-1]], [manifest, nil]]
+      unless apply_changes
+        changes.each { |path, content| puts "Would #{content ? 'edit' : 'remove'} #{path}" }
         return
       end
-      if %w[update uninstall update-if-installed].include?(mode) && !state
-        raise 'Caveman is not managed by this repository; use make install-caveman first'
-      end
-      configs = %w[opencode.jsonc opencode.json].select do |name|
-        path = safe_path(File.join(root, name), root: root)
-        File.exist?(path)
-      end
-      raise 'Expected exactly one opencode.jsonc or opencode.json; resolve missing/ambiguous configuration first' unless configs.length == 1
-      config_name = configs.first
-      raise 'Managed OpenCode configuration path changed' if state && state['config'] != config_name
-      config_path = File.join(root, config_name)
-      instructions_path = safe_path(File.join(root, 'AGENTS.md'), root: root)
-      config = File.read(config_path, encoding: 'UTF-8')
-      instructions = File.exist?(instructions_path) ? File.read(instructions_path, encoding: 'UTF-8') : ''
-      span = block_span(instructions)
-      paths = SOURCES.keys.map { |relative| safe_path(File.join(root, relative), root: root) }
-      if state
-        verify_owned(root, state, instructions)
-        # Validate registration even on no-op installs and updates.
-        removed_config = plugin_config(config, remove: true)
-        if mode == 'install'
-          puts "Caveman #{state['release']} is already installed. Use make update-caveman to refresh it."
-          return
-        end
-      else
-        raise 'Existing Caveman instructions are not owned by this installer' if span || instructions.include?('Respond terse like smart caveman')
-        paths.each { |path| raise "Unowned Caveman file conflict: #{path}" if File.exist?(path) }
-        %w[plugins/caveman skills/caveman].each do |relative|
-          path = safe_path(File.join(root, relative), root: root, directory: true)
-          raise "Unowned Caveman directory conflict: #{path}" if File.exist?(path)
-        end
-      end
-      if mode == 'uninstall'
-        changes = paths.map { |path| [path, nil] }
-        changes += [[config_path, removed_config], [instructions_path, replace_block(instructions, '')], [manifest_path, nil]]
-        %w[.caveman-active .caveman-active.prev].each do |name|
-          path = safe_path(File.join(root, name), root: root)
-          changes << [path, nil] if File.exist?(path)
-        end
-        apply(changes)
-        %w[plugins/caveman skills/caveman].each do |relative|
-          path = File.join(root, relative)
-          Dir.rmdir(path) if Dir.exist?(path) && Dir.empty?(path)
-        end
-        puts 'Uninstalled managed Caveman output integration. Runtime history, if any, was preserved. Restart OpenCode.'
-        return
-      end
-      updated_config = state ? config : plugin_config(config)
-      payload = download
-      rule = payload.delete('_rules').strip
-      raise 'Unexpected upstream activation markers' if block_span(rule)
-      block = "#{BEGIN_MARK}\n#{rule}\n\n#{SAFEGUARDS}\n#{END_MARK}"
-      manifest = {
-        'schema' => 1, 'release' => RELEASE, 'revision' => REVISION,
-        'config' => config_name, 'files' => payload.transform_values { |content| digest(content) },
-        'block_sha256' => digest(block)
-      }
-      changes = payload.map { |relative, content| [File.join(root, relative), content] }
-      changes += [[config_path, updated_config], [instructions_path, replace_block(instructions, block)], [manifest_path, JSON.pretty_generate(manifest) + "\n"]]
-      # Keep a private first-install backup; never overwrite it on updates.
-      backup = safe_path(File.join(root, '.caveman-config-backup'), root: root)
-      changes.unshift([backup, config]) unless File.exist?(backup) || state
+
       apply(changes)
-      puts "Installed Caveman #{RELEASE} output-only integration in #{root}. Restart OpenCode."
+      changes.each { |path, content| puts "#{content ? 'Edited' : 'Removed'} #{path}" }
+      %w[plugins/caveman skills/caveman].each do |relative|
+        path = File.join(root, relative)
+        Dir.rmdir(path) if Dir.empty?(path)
+      end
+      puts 'Restart OpenCode to unload Caveman.'
     ensure
-      Dir.rmdir(lock)
+      Dir.rmdir(lock) if locked
     end
-  end
-
-  def self.preserve_instructions(template, destination, temporary)
-    safe_path(destination, root: File.dirname(destination))
-    text = File.exist?(destination) ? File.read(destination, encoding: 'UTF-8') : ''
-    span = block_span(text)
-    base = File.read(template, encoding: 'UTF-8')
-    raise 'Template must not contain Caveman markers' if block_span(base)
-    atomic_write(temporary, span ? replace_block(base, text[span[0]...span[1]]) : base)
-  end
-end
-
-if $PROGRAM_NAME == __FILE__
-  begin
-    mode = ARGV.shift || 'install'
-    if mode == 'preserve-instructions' && ARGV.length == 3
-      Caveman.preserve_instructions(*ARGV)
-    elsif %w[install update uninstall update-if-installed].include?(mode) && ARGV.empty?
-      Caveman.lifecycle(mode)
-    else
-      raise 'Usage: install-caveman.sh [install|update|uninstall|update-if-installed]'
-    end
-  rescue StandardError => error
-    warn "Caveman: #{error.message}"
-    exit 1
   end
 end

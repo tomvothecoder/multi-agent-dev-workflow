@@ -6,7 +6,6 @@
 #
 # They are then appended, using managed markers, to:
 #   ~/.codex/AGENTS.md
-#   ~/.claude/CLAUDE.md
 #   ~/.config/opencode/AGENTS.md
 #   ~/.copilot/instructions/nersc-filesystem.instructions.md
 #
@@ -24,7 +23,6 @@ set -euo pipefail
 CANONICAL_DIR="$HOME/.config/ai-instructions"
 CANONICAL_FILE="$CANONICAL_DIR/nersc-filesystem.md"
 CODEX_FILE="$HOME/.codex/AGENTS.md"
-CLAUDE_FILE="$HOME/.claude/CLAUDE.md"
 OPENCODE_FILE="$HOME/.config/opencode/AGENTS.md"
 COPILOT_FILE="$HOME/.copilot/instructions/nersc-filesystem.instructions.md"
 
@@ -60,7 +58,6 @@ append_instructions() {
 mkdir -p \
   "$CANONICAL_DIR" \
   "$(dirname "$CODEX_FILE")" \
-  "$(dirname "$CLAUDE_FILE")" \
   "$(dirname "$OPENCODE_FILE")" \
   "$(dirname "$COPILOT_FILE")"
 
@@ -87,7 +84,6 @@ cat > "$CANONICAL_FILE" <<'EOF'
 EOF
 
 append_instructions "$CODEX_FILE"
-append_instructions "$CLAUDE_FILE"
 append_instructions "$OPENCODE_FILE"
 
 if [ ! -e "$COPILOT_FILE" ] && [ ! -L "$COPILOT_FILE" ]; then

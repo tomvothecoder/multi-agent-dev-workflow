@@ -23,13 +23,14 @@ if [ -f "$DESTINATION" ] && cmp -s "$TEMPLATE" "$DESTINATION"; then
   exit 0
 fi
 
+if [ -f "$DESTINATION" ] && grep -Eq '<!-- caveman-(begin|end) -->' "$DESTINATION"; then
+  printf 'Legacy Caveman instructions found. Run make uninstall before updating: %s\n' "$DESTINATION" >&2
+  exit 1
+fi
+
 temporary="$(mktemp "$OPENCODE_CONFIG_DIR/.AGENTS.md.XXXXXX")"
 trap 'rm -f "$temporary"' EXIT
-if [ -f "$DESTINATION" ] && grep -Eq '<!-- caveman-(begin|end) -->' "$DESTINATION"; then
-  ruby "$ROOT/global/manage-caveman.rb" preserve-instructions "$TEMPLATE" "$DESTINATION" "$temporary"
-else
-  cp "$TEMPLATE" "$temporary"
-fi
+cp "$TEMPLATE" "$temporary"
 if [ -f "$DESTINATION" ]; then
   mode="$(stat -c %a "$DESTINATION" 2>/dev/null || stat -f %Lp "$DESTINATION")"
   chmod "$mode" "$temporary"

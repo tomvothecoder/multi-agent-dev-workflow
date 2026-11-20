@@ -5,36 +5,27 @@
 help:
 	@printf '%s\n' \
 		'Installation:' \
-		'  install               Install missing OpenCode and Claude workflow files' \
-		'  install-skills        Install missing skills for both tools' \
-		'  install-commands      Install missing commands for both tools' \
-		'  install-opencode      Install only OpenCode workflow files' \
-		'  install-claude        Install only Claude workflow files' \
+		'  install               Install missing OpenCode workflow files' \
+		'  install-skills        Install missing OpenCode skills' \
+		'  install-commands      Install missing OpenCode commands' \
+		'  install-opencode      Alias for install' \
 		'  install-pi-commands   Install missing Pi workflow prompt templates' \
 		'  install-pi-workflow   Install Pi plan mode and independent review' \
 		'  install-lazygit       Install Lazygit (Linux pin: LAZYGIT_VERSION=0.66.0)' \
 		'  setup-lazygit         Suggest ~/worktrees for new Lazygit worktrees' \
-		'  install-caveman       Install optional Caveman output-only styling' \
-		'  uninstall-caveman     Remove only the managed Caveman integration' \
+		'  uninstall             Preview legacy Claude Code and Caveman cleanup (APPLY=1 to remove)' \
 		'' 'Updates:' \
-		'  update-all            Update both tools in order, stopping on failure' \
-		'  update-opencode-all   Run only the OpenCode update sequence' \
-		'  update-claude-all     Refresh all managed Claude templates and settings' \
+		'  update-all            Run the OpenCode update sequence, stopping on failure' \
+		'  update-opencode-all   Alias for update-all' \
 		'  update-opencode       Upgrade OpenCode, refresh models, and sync config' \
 		'  refresh-models        Refresh the OpenCode model catalog' \
 		'  update-livai-models   Update only provider.livai.models from the template' \
 		'  update-agents         Refresh models and update OpenCode agent settings' \
 		'  update-permissions    Update only permission from the template' \
-		'  update-agents-md      Refresh shared instructions for both tools' \
-		'  update-skills         Replace managed SKILL.md files for both tools' \
-		'  update-commands       Replace managed workflow commands for both tools' \
+		'  update-agents-md      Refresh OpenCode instructions' \
+		'  update-skills         Replace managed OpenCode SKILL.md files' \
+		'  update-commands       Replace managed OpenCode workflow commands' \
 		'  update-skills-commands Update both workflow skills and commands' \
-		'  install-<tool>-skills / install-<tool>-commands  Install one component' \
-		'  update-<tool>-skills / update-<tool>-commands    Refresh one component' \
-		'  update-<tool>-instructions  Refresh instructions (<tool>: opencode or claude)' \
-		'  install-claude-agents / update-claude-agents    Manage Claude subagents' \
-		'  update-claude-settings Merge managed Claude settings keys' \
-		'  update-caveman        Refresh the managed Caveman output integration' \
 		'' 'Optional profiles:' \
 		'  install-nersc-rules   Install the optional NERSC filesystem rules profile' \
 		'  uninstall-nersc-rules Remove the NERSC filesystem rules profile' \
@@ -42,42 +33,22 @@ help:
 		'  test                  Run fast template and Makefile checks' \
 		'  test-all              Run all checks, including isolated installer lifecycles' \
 		'  lazygit-test          Run isolated Lazygit installer and config checks' \
-		'  caveman-test          Run isolated Caveman lifecycle checks' \
-		'  claude-test           Run isolated Claude and parallel lifecycle checks' \
+		'  uninstall-test        Run isolated legacy cleanup checks' \
 		'  structure-test        Validate the OpenCode template' \
 		'  pi-test               Test Pi workflow commands (Node.js 22.18+)'
 
 # --- Installation -------------------------------------------------------------
 
 .PHONY: install install-skills install-commands install-opencode install-opencode-skills install-opencode-commands
-.PHONY: install-claude install-claude-skills install-claude-commands install-claude-agents
 
-install:
-	@$(MAKE) install-opencode
-	@$(MAKE) install-claude
-
-install-opencode:
+install install-opencode:
 	@./global/install-opencode-config.sh
 
-install-skills:
-	@$(MAKE) install-opencode-skills
-	@$(MAKE) install-claude-skills
-
-install-opencode-skills:
+install-skills install-opencode-skills:
 	@./global/install-opencode-config.sh skills
 
-install-commands:
-	@$(MAKE) install-opencode-commands
-	@$(MAKE) install-claude-commands
-
-install-opencode-commands:
+install-commands install-opencode-commands:
 	@./global/install-opencode-config.sh commands
-
-install-claude:
-	@bash ./global/install-claude-config.sh
-
-install-claude-skills install-claude-commands install-claude-agents:
-	@bash ./global/install-claude-config.sh $(patsubst install-claude-%,%,$@)
 
 .PHONY: install-pi-commands install-pi-workflow install-lazygit setup-lazygit
 
@@ -109,39 +80,21 @@ install-lazygit:
 setup-lazygit:
 	@./global/setup-lazygit.sh
 
-.PHONY: install-caveman update-caveman uninstall-caveman caveman-test
+.PHONY: uninstall
 
-install-caveman:
-	@bash ./global/install-caveman.sh install
-
-update-caveman:
-	@bash ./global/install-caveman.sh update
-
-uninstall-caveman:
-	@bash ./global/install-caveman.sh uninstall
-
-caveman-test:
-	@ruby ./test/caveman.rb
+uninstall:
+	@ruby ./global/uninstall-legacy.rb $(if $(filter 1,$(APPLY)),--apply)
 
 # --- Updates ------------------------------------------------------------------
 
 .PHONY: update-all update-opencode refresh-models update-livai-models update-agents update-permissions update-agents-md update-skills update-commands update-skills-commands
 .PHONY: update-opencode-all update-opencode-instructions update-opencode-skills update-opencode-commands
-.PHONY: update-claude-all update-claude-instructions update-claude-skills update-claude-commands update-claude-agents update-claude-settings
 
-update-all:
-	@$(MAKE) update-opencode-all
-	@$(MAKE) update-claude-all
-
-update-opencode-all:
+update-all update-opencode-all:
 	@$(MAKE) update-opencode
 	@$(MAKE) update-opencode-instructions
 	@$(MAKE) update-opencode-skills
 	@$(MAKE) update-opencode-commands
-	@bash ./global/install-caveman.sh update-if-installed
-
-update-claude-all update-claude-instructions update-claude-skills update-claude-commands update-claude-agents update-claude-settings:
-	@bash ./global/install-claude-config.sh $(patsubst update-claude-%,update-%,$@)
 
 update-opencode:
 	@opencode upgrade
@@ -160,25 +113,13 @@ update-agents: refresh-models
 update-permissions:
 	@./global/sync-opencode-config-sections.py permissions
 
-update-agents-md:
-	@$(MAKE) update-opencode-instructions
-	@$(MAKE) update-claude-instructions
-
-update-opencode-instructions:
+update-agents-md update-opencode-instructions:
 	@./global/sync-opencode-agents-md.sh
 
-update-skills:
-	@$(MAKE) update-opencode-skills
-	@$(MAKE) update-claude-skills
-
-update-opencode-skills:
+update-skills update-opencode-skills:
 	@./global/install-opencode-config.sh update-skills
 
-update-commands:
-	@$(MAKE) update-opencode-commands
-	@$(MAKE) update-claude-commands
-
-update-opencode-commands:
+update-commands update-opencode-commands:
 	@./global/install-opencode-config.sh update-commands
 
 update-skills-commands:
@@ -197,7 +138,7 @@ uninstall-nersc-rules:
 
 # --- Validation ---------------------------------------------------------------
 
-.PHONY: test test-all structure-test lazygit-test claude-test pi-test
+.PHONY: test test-all structure-test lazygit-test uninstall-test pi-test
 
 test:
 	@./test/structure.sh
@@ -205,9 +146,8 @@ test:
 test-all:
 	@./test/lifecycle.sh
 	@./test/structure.sh
-	@$(MAKE) claude-test
 	@./test/lazygit.sh
-	@ruby ./test/caveman.rb
+	@$(MAKE) uninstall-test
 
 lazygit-test:
 	@./test/lazygit.sh
@@ -215,8 +155,8 @@ lazygit-test:
 structure-test:
 	@./test/structure.sh
 
-claude-test:
-	@bash ./test/claude.sh
+uninstall-test:
+	@ruby ./test/uninstall.rb
 
 pi-test:
 	@node --test ./test/pi-workflow.mjs

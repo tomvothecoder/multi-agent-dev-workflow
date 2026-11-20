@@ -111,7 +111,8 @@ done
 for target in update-all update-skills update-commands update-skills-commands install-pi-commands install-pi-workflow install-lazygit setup-lazygit lazygit-test; do
   rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"
 done
-for target in install-opencode-config update-opencode-sections; do
+rg -q '^  uninstall[[:space:]]' "$CHECK_DIR/help"
+for target in install-opencode-config update-opencode-sections install-claude update-claude-all install-caveman update-caveman; do
   if make -n -C "$CHECK_DIR" "$target" >"$CHECK_DIR/error" 2>&1; then exit 1; fi
   if rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"; then exit 1; fi
 done
@@ -192,22 +193,8 @@ printf '%s\n' "$*" >> "$UPDATE_TEST_LOG"
 test "${UPDATE_FAIL_STEP:-}" != "$*"
 EOF
 chmod +x "$CHECK_DIR/global/sync-opencode-agents-md.sh" "$CHECK_DIR/global/install-opencode-config.sh"
-cat > "$CHECK_DIR/global/install-caveman.sh" <<'EOF'
-#!/usr/bin/env bash
-set -eu
-test "$*" = update-if-installed
-printf 'update-caveman\n' >> "$UPDATE_TEST_LOG"
-test "${UPDATE_FAIL_STEP:-}" != update-caveman
-EOF
-cat > "$CHECK_DIR/global/install-claude-config.sh" <<'EOF'
-#!/usr/bin/env bash
-set -eu
-test "$*" = update-all
-printf 'update-claude\n' >> "$UPDATE_TEST_LOG"
-test "${UPDATE_FAIL_STEP:-}" != update-claude
-EOF
 # A parallel outer Make must still execute each update exactly once, in order.
-steps=(upgrade 'models --refresh' sync agents-md update-skills update-commands update-caveman update-claude)
+steps=(upgrade 'models --refresh' sync agents-md update-skills update-commands)
 : > "$CHECK_DIR/log"
 PATH="$CHECK_DIR:$PATH" UPDATE_TEST_LOG="$CHECK_DIR/log" make -j4 -C "$CHECK_DIR" update-all >/dev/null
 printf '%s\n' "${steps[@]}" > "$CHECK_DIR/expected"

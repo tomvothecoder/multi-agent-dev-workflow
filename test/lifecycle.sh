@@ -7,7 +7,6 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CORE_CONFIG_HOME="$(mktemp -d)"
 trap 'rm -rf "$CORE_CONFIG_HOME"' EXIT
 CORE_CONFIG_DIR="$CORE_CONFIG_HOME/custom-opencode"
-export CLAUDE_CONFIG_DIR="$CORE_CONFIG_HOME/custom-claude"
 CORE_CONFIG="$CORE_CONFIG_DIR/opencode.jsonc"
 # Keep model refresh checks deterministic and independent of network/authentication.
 mkdir -p "$CORE_CONFIG_HOME/bin"
@@ -258,9 +257,9 @@ printf '%s\n' '---' 'applyTo: "**"' '---' '' 'Custom instructions' > "$NERSC_HOM
 HOME="$NERSC_HOME" "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
 HOME="$NERSC_HOME" "$ROOT/profiles/nersc/install-nersc-filesystem-rules.sh"
 test -f "$NERSC_HOME/.config/ai-instructions/nersc-filesystem.md"
+test "$(<"$NERSC_HOME/.claude/CLAUDE.md")" = 'Custom instructions'
 for file in \
   "$NERSC_HOME/.codex/AGENTS.md" \
-  "$NERSC_HOME/.claude/CLAUDE.md" \
   "$NERSC_HOME/.config/opencode/AGENTS.md" \
   "$NERSC_HOME/.copilot/instructions/nersc-filesystem.instructions.md"; do
   test "$(rg -F -c '<!-- BEGIN NERSC FILESYSTEM INSTRUCTIONS -->' "$file")" = 1
