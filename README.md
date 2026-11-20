@@ -141,6 +141,19 @@ make install-opencode-commands
 
 This copies missing files from `global/opencode/commands/` into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/commands/`. Existing same-named commands (including symlinks) are preserved. Use `make update-opencode-commands` to replace only OpenCode's five workflow commands; this overwrites local edits. `/plan` overrides OpenCode's built-in command of the same name, if present.
 
+### Pi commands (optional)
+
+Run `make install-pi-commands` to copy the five OpenCode command templates into `${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}/prompts/`, preserving existing files and symlinks. Run `/reload` in Pi. This target is separate from `make install` and does not install skills, subagents, or permission rules.
+
+### Pi plan mode and independent review (optional)
+
+Run `make install-pi-workflow`, then `/reload` in Pi. This installs the extension without replacing an existing copy. It takes precedence over the `/plan` prompt template.
+
+- `/plan [task]` keeps the plan in your current conversation and limits the model to built-in read/search tools. Paste issue details if needed. Use `/plan-exit` to restore your previous tools; this does not approve the plan or start implementation.
+- `/review-independent [base]` reviews the tracked diff against `HEAD` by default. Use a different base (e.g. `main`) to include committed changes. Enter the task and actual check results when prompted. Untracked files are excluded. Findings appear in the current conversation; no fixes are applied. The reviewer uses the active model in a fresh Pi process without extensions or MCP, so the model must work without extensions and `pi` must be on `PATH`.
+
+These are model tool restrictions, not OS sandboxes. Review evidence and inspected files can be sent to your model provider.
+
 ## Providers
 
 The OpenCode template enables these providers:

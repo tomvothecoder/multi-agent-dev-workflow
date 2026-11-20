@@ -10,6 +10,8 @@ help:
 		'  install-commands      Install missing commands for both tools' \
 		'  install-opencode      Install only OpenCode workflow files' \
 		'  install-claude        Install only Claude workflow files' \
+		'  install-pi-commands   Install missing Pi workflow prompt templates' \
+		'  install-pi-workflow   Install Pi plan mode and independent review' \
 		'  install-lazygit       Install Lazygit (Linux pin: LAZYGIT_VERSION=0.66.0)' \
 		'  setup-lazygit         Suggest ~/worktrees for new Lazygit worktrees' \
 		'  install-caveman       Install optional Caveman output-only styling' \
@@ -42,7 +44,8 @@ help:
 		'  lazygit-test          Run isolated Lazygit installer and config checks' \
 		'  caveman-test          Run isolated Caveman lifecycle checks' \
 		'  claude-test           Run isolated Claude and parallel lifecycle checks' \
-		'  structure-test        Validate the OpenCode template'
+		'  structure-test        Validate the OpenCode template' \
+		'  pi-test               Test Pi workflow commands (Node.js 22.18+)'
 
 # --- Installation -------------------------------------------------------------
 
@@ -76,7 +79,29 @@ install-claude:
 install-claude-skills install-claude-commands install-claude-agents:
 	@bash ./global/install-claude-config.sh $(patsubst install-claude-%,%,$@)
 
-.PHONY: install-lazygit setup-lazygit
+.PHONY: install-pi-commands install-pi-workflow install-lazygit setup-lazygit
+
+install-pi-commands:
+	@set -eu; \
+	prompts="$${PI_CODING_AGENT_DIR:-$$HOME/.pi/agent}/prompts"; \
+	mkdir -p "$$prompts"; \
+	for command in plan export-plan implement review-again draft-pr; do \
+		dest="$$prompts/$$command.md"; \
+		if [ ! -e "$$dest" ] && [ ! -L "$$dest" ]; then \
+			cp "global/opencode/commands/$$command.md" "$$dest"; \
+		fi; \
+	done; \
+	printf 'Pi workflow commands: %s\n' "$$prompts"
+
+install-pi-workflow:
+	@set -eu; \
+	dir="$${PI_CODING_AGENT_DIR:-$$HOME/.pi/agent}/extensions"; \
+	dest="$$dir/multi-agent-dev-workflow.ts"; \
+	mkdir -p "$$dir"; \
+	if [ ! -e "$$dest" ] && [ ! -L "$$dest" ]; then \
+		cp global/pi/workflow.ts "$$dest"; \
+	fi; \
+	printf 'Pi workflow extension: %s\n' "$$dest"
 
 install-lazygit:
 	@./global/install-lazygit.sh
@@ -172,7 +197,7 @@ uninstall-nersc-rules:
 
 # --- Validation ---------------------------------------------------------------
 
-.PHONY: test test-all structure-test lazygit-test claude-test
+.PHONY: test test-all structure-test lazygit-test claude-test pi-test
 
 test:
 	@./test/structure.sh
@@ -192,3 +217,6 @@ structure-test:
 
 claude-test:
 	@bash ./test/claude.sh
+
+pi-test:
+	@node --test ./test/pi-workflow.mjs
