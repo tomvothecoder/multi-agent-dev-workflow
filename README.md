@@ -22,10 +22,10 @@ flowchart LR
 | ---------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `livai-primary`  | `livai/gpt-6.1-sol`, medium            | Default primary: plans, implements, tests, and fixes. Use high reasoning only for difficult or risky work. | Normal development access; may call only LivAI Explorer or Reviewer.                     |
 | `livai-explorer` | `livai/gpt-6-luna`, low                | Targeted repository investigation for LivAI Primary.                                                       | Read/search only; no shell, edits, web access, or delegation.                            |
-| `primary`        | `openai/gpt-6.1-sol`, medium           | OpenAI-backed primary: plans, implements, tests, and fixes.                                                | Normal development access; may call only Explorer or Reviewer.                           |
+| `primary`        | `openai/gpt-6.2-sol`, medium           | OpenAI-backed primary: plans, implements, tests, and fixes.                                                | Normal development access; may call only Explorer or Reviewer.                           |
 | `reviewer`       | `github-copilot/claude-opus-5.5`, high | One independent review when requested or for risky changes.                                                | Read-only; may inspect `git status`, `git diff`, and `git show`; no edits or delegation. |
 
-The existing `primary` and `explorer` agents remain available as the OpenAI-backed workflow. Select `primary` explicitly when you want that path. GitHub Copilot remains the reviewer for both workflows. If it is unavailable, configure the `reviewer` model as `livai/gpt-6.1-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
+Select `primary` for the OpenAI-backed workflow. It delegates exploration to `openai/gpt-6.2-sol-ultrafast` at low reasoning. The LivAI profiles keep their existing models because that catalog did not expose GPT‑6.2. GitHub Copilot remains the reviewer for both workflows. If it is unavailable, configure the `reviewer` model as `livai/gpt-6.1-sol` with high reasoning. The reviewer is skipped for trivial or mechanical edits.
 
 Explorer and Reviewer each have one focused skill, installed globally by `make install`:
 

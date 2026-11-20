@@ -54,7 +54,7 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
     "low": {"reasoningEffort":"low"},
     "none": {"reasoningEffort":"none"}
   })) and
-  .agent.primary.model == "openai/gpt-6.1-sol" and
+  .agent.primary.model == "openai/gpt-6.2-sol" and
   .agent.primary.mode == "primary" and
   .agent.primary.variant == "medium" and
   .agent.primary.reasoningEffort == "medium" and
@@ -62,14 +62,13 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent.primary.permission.skill == "deny" and
   (.agent.primary.prompt == (.agent["livai-primary"].prompt | gsub("livai-explorer"; "explorer"))) and
   .agent.explorer.mode == "subagent" and
-  .agent.explorer.model == "openai/gpt-6-luna" and
+  .agent.explorer.model == "openai/gpt-6.2-sol-ultrafast" and
   .agent.explorer.variant == "low" and
   .agent.explorer.reasoningEffort == "low" and
   .agent.explorer.permission.edit == "deny" and
   .agent.explorer.permission.task == "deny" and
   .agent.explorer.permission.skill == {"*":"deny","explore":"allow"} and
   .agent["livai-primary"].model == "livai/gpt-6.1-sol" and
-  .agent["livai-primary"].model == (.agent.primary.model | sub("^openai/"; "livai/")) and
   .agent["livai-primary"].mode == "primary" and
   .agent["livai-primary"].variant == "medium" and
   .agent["livai-primary"].reasoningEffort == "medium" and
@@ -77,7 +76,6 @@ sed '/^[[:space:]]*\/\//d' "$HOST_TEMPLATE" | jq --exit-status '
   .agent["livai-primary"].permission.skill == "deny" and
   .agent["livai-explorer"].mode == "subagent" and
   .agent["livai-explorer"].model == "livai/gpt-6-luna" and
-  .agent["livai-explorer"].model == (.agent.explorer.model | sub("^openai/"; "livai/")) and
   .agent["livai-explorer"].variant == "low" and
   .agent["livai-explorer"].reasoningEffort == "low" and
   .agent["livai-explorer"].permission.edit == "deny" and
