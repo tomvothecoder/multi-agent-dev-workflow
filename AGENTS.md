@@ -1,66 +1,35 @@
 # Simple Three-Agent Workflow
 
-These are global defaults for a direct OpenCode workflow. Repository-level `AGENTS.md` and repository-local skills or instructions override them.
-
-## Precedence
-
-1. User task/spec
-2. Repository `AGENTS.md`
-3. Repository-local skills/instructions
-4. This file
-5. Tool defaults
+Global defaults. User instructions and repository-level `AGENTS.md`, skills, or instructions override them.
 
 ## General Rules
 
-- Keep diffs minimal.
-- Do not perform unrelated refactors.
-- Preserve public behavior unless explicitly required.
-- Add or update tests for behavior changes.
-- Follow existing project patterns.
-- Do not edit generated files unless explicitly required.
-- Prefer deterministic tests and CI over agent agreement.
-- For full test, lint, and QA runs, use matching repository `Makefile` targets when they exist; otherwise use the commands documented in the repository (for example, README, CONTRIBUTING, `pyproject.toml`, or `package.json` scripts). Do not guess at targets.
-- While iterating, run only tests and lint/format checks for changed code. For a targeted run through a `make` test target, pass pytest options with `PYTEST_ADDOPTS` (for example, `-k <name> --no-cov`); otherwise run direct commands on the changed tests or files (for example, `pre-commit run --files <files>`).
-- Run the full suite and repository-wide checks (for example, `make pre-commit-run`) once, after the final change.
-- Do not rerun a passing check unless code it covers changed. After a full-run failure, rerun only the failing tests until fixed, then do one final full run.
-- Use the Python environment associated with the repository when needed, including Conda or uv environments.
-- Don't use the system-level Python or base Conda environments.
+- Make the smallest complete change. No unrelated refactors.
+- Do not add files, helpers, options, abstractions, or docs unless the task requires them.
+- Preserve public behavior unless the task changes it. Add or update tests for behavior changes.
+- Follow existing project patterns. Do not edit generated files unless required.
+- Use the repository's environment (Conda or uv), never system Python or base Conda.
+- Use repository `Makefile` targets or documented commands for tests and checks; do not guess targets.
+- While iterating, run only checks for changed code (for example, `PYTEST_ADDOPTS="-k <name> --no-cov" make test` or `pre-commit run --files <files>`). Run the full suite and repository-wide checks once at the end; after a failure, rerun only the failing checks, then one final full run.
 - Do not expose secrets, credentials, tokens, private keys, or unapproved proprietary data.
 - Do not commit, push, open PRs, or merge unless explicitly asked.
 
 ## Documentation Style
 
-- Apply these rules to documentation, plans, issues, PRs, and other written artifacts, regardless of chat mode.
-- Write the shortest complete version for the intended reader.
-- Use direct, plain language and short paragraphs or bullets.
-- State each fact once. Link to existing details instead of repeating them.
-- Include only what readers need to act: purpose, usage, constraints, and essential caveats.
-- Omit introductions, recaps, obvious explanations, and speculative guidance.
-- Add examples only when they clarify non-obvious usage.
-- Use headings only when they improve navigation. Omit empty or unnecessary sections.
+Applies to docs, plans, issues, PRs, and other written artifacts.
+
+- Write the shortest complete version for the reader. Plain language, short bullets.
+- Include only what readers need to act. No introductions, recaps, or speculative guidance.
+- State each fact once; link instead of repeating.
 - Preserve exact commands, paths, technical qualifications, and safety warnings.
-- Before finishing, remove repetition and sentences that add no useful information.
-- Follow explicit user requests and required repository templates over these defaults.
+- Follow explicit user requests and repository templates over these defaults.
 
 ## Python Style
 
-Apply these rules to new or changed Python code:
+For new or changed code, beyond the repository's formatter and linter:
 
-- Follow PEP 8 and the repository's formatter.
-- Keep all imports at module level, after the module docstring and before module constants or other code; do not place imports inside functions or methods.
-- Place `from __future__` imports first, then group standard-library, third-party, and local imports in that order, with a blank line between groups.
-- Sort imports within each group using the repository's configured import sorter, such as Ruff's `I` rules; follow its configuration rather than manually imposing a different order.
-- Separate logical code groups with blank lines.
-- Add a blank line before final returns after computation or mutation; omit it for simple return-only blocks.
-- Place public functions and APIs above private helpers; order private helpers by call hierarchy, caller before child helpers, where practical.
+- Keep imports at module level; none inside functions.
+- Place public functions above private helpers; order helpers caller before callee.
+- Prefix internal helpers with `_`. Prefer module-level helpers over nested functions and opaque lambdas.
+- Add a blank line before a final return that follows computation.
 - Keep `if __name__ == "__main__":` last.
-- Prefix internal helpers with `_`.
-- Avoid unnecessary nested functions and opaque lambdas; use private module-level helpers unless a closure is needed.
-
-## Agent Roles
-
-- `primary` plans, implements, tests, and fixes. It handles normal work directly.
-- `explorer` is optional, read-only, and receives only a precise codebase investigation question.
-- `reviewer` is optional, read-only, and runs once after substantial changes and relevant checks.
-
-Do not delegate routine work. Do not use parallel edits, councils, fallback workers, or recursive delegation. The primary agent evaluates review findings, fixes only valid findings, and reruns relevant checks. Repository checks and human approval are evidence; agent agreement is not.
