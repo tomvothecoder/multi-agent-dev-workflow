@@ -11,9 +11,11 @@ function fixture(entries = []) {
   const events = {};
   const messages = [];
   const notifications = [];
+  const delegates = {};
   let tools = [...originalTools];
   const pi = {
     registerCommand(name, { handler }) { commands[name] = handler; },
+    registerTool({ name, execute }) { delegates[name] = (params, ctx) => execute("id", params, undefined, undefined, ctx); },
     on(name, handler) { events[name] = handler; },
     getActiveTools: () => tools,
     getAllTools: () => ["read", "grep", "find", "ls", "bash", "edit"].map(name => ({
@@ -27,23 +29,24 @@ function fixture(entries = []) {
   const ctx = {
     hasUI: true,
     cwd: "/worktree",
-    model: { provider: "provider", id: "model" },
-    thinkingLevel: "high",
-    sessionManager: { getEntries: () => entries },
+    modelRegistry: { getAvailable: () => [
+      { provider: "openai-codex", id: "gpt-6.2-sol" },
+      { provider: "github-copilot", id: "claude-opus-5.5" },
+    ] },
+    sessionManager: { getEntries: () => entries, getBranch: () => entries },
     async waitForIdle() {},
     ui: {
       setStatus() {},
       notify(text) { notifications.push(text); },
-      async editor() { return "Task: fix bug\nChecks: make test passed"; },
     },
   };
   workflow(pi);
-  return { commands, events, messages, notifications, pi, ctx };
+  return { commands, delegates, events, messages, notifications, pi, ctx };
 }
 
 test("plan limits model tools, keeps the prompt in chat and restores the prior selection", async () => {
   const entries = [];
-  const { commands, events, messages, pi, ctx } = fixture(entries);
+  const { commands, delegates, events, messages, pi, ctx } = fixture(entries);
   await commands.plan("Fix the bug", ctx);
   assert.deepEqual(pi.getActiveTools(), ["read", "grep", "find"]);
   assert.match(messages[0], /Task: Fix the bug/);
@@ -51,7 +54,8 @@ test("plan limits model tools, keeps the prompt in chat and restores the prior s
   assert.equal(events.tool_call({ toolName: "bash" }).block, true);
   assert.equal(events.tool_call({ toolName: "codemode" }).block, true);
   assert.equal(events.tool_call({ toolName: "read" }), undefined);
-  assert.equal(events.input({ text: "/implement" }, ctx).action, "handled");
+  assert.equal((await events.input({ text: "/implement" }, ctx)).action, "handled");
+  await assert.rejects(delegates.explorer({ question: "Where?" }, ctx), /disabled in plan mode/);
   pi.setActiveTools(["bash"]);
   events.before_agent_start({ systemPromptOptions: { promptGuidelines: [] } });
   assert.deepEqual(pi.getActiveTools(), ["read", "grep", "find"]);
@@ -61,12 +65,13 @@ test("plan limits model tools, keeps the prompt in chat and restores the prior s
   assert.deepEqual(resumed.pi.getActiveTools(), ["read", "grep", "find"]);
   await resumed.commands["plan-exit"]("", resumed.ctx);
   assert.deepEqual(resumed.pi.getActiveTools(), originalTools);
-  assert.equal(resumed.events.input({ text: "/implement" }, resumed.ctx), undefined);
+  resumed.pi.exec = async () => ({ code: 0, stdout: hash });
+  assert.equal(await resumed.events.input({ text: "/implement" }, resumed.ctx), undefined);
   assert.deepEqual(resumed.messages, []);
 });
 
 test("review uses the tracked diff and check evidence without triggering an implementation turn", async () => {
-  const { commands, messages, pi, ctx } = fixture();
+  const { delegates, events, messages, pi, ctx } = fixture();
   const calls = [];
   let evidence;
   pi.exec = async (command, args, options) => {
@@ -80,26 +85,46 @@ test("review uses the tracked diff and check evidence without triggering an impl
     assert.match(text, /\+changed/);
     return { code: 0, stdout: "No findings." };
   };
-  await commands["review-independent"]("main", ctx);
-  assert.deepEqual(calls[0], ["git", ["rev-parse", "--verify", "--end-of-options", "main^{commit}"]]);
-  assert.deepEqual(calls[1][1].slice(-2), [hash, "--"]);
-  assert.deepEqual(calls[2][1].slice(0, 13), ["--print", "--no-session", "--no-extensions", "--no-mcp", "--no-skills",
-    "--no-prompt-templates", "--no-context-files", "--tools", "read,grep,find,ls", "--model", "provider/model", "--thinking", "high"]);
-  assert.deepEqual(messages, [{ customType: "independent-review", display: true, content: "## Independent review\n\nNo findings." }]);
+  await events.input({ text: "/implement" }, ctx);
+  const result = await delegates.reviewer({ task: "fix bug", checks: "make test passed" }, ctx);
+  assert.deepEqual(calls[0], ["git", ["rev-parse", "--verify", "--end-of-options", "HEAD^{commit}"]]);
+  assert.equal(calls[1][1].at(-1), `${hash}^{commit}`);
+  assert.deepEqual(calls[2][1].slice(-2), [hash, "--"]);
+  assert.deepEqual(calls[3][1].slice(0, 13), ["--print", "--no-session", "--no-extensions", "--no-mcp", "--no-skills",
+    "--no-prompt-templates", "--no-context-files", "--tools", "read,grep,find,ls", "--model", "github-copilot/claude-opus-5.5", "--thinking", "high"]);
+  assert.deepEqual(result.content, [{ type: "text", text: "No findings." }]);
+  assert.deepEqual(messages, []);
   await assert.rejects(readFile(evidence), { code: "ENOENT" });
 });
 
-test("review stops before calling Pi when the diff is empty or the user cancels", async () => {
-  const { commands, notifications, pi, ctx } = fixture();
-  let diff = "";
+test("review rejects missing evidence and empty or truncated diffs", async () => {
+  const { delegates, pi, ctx } = fixture();
+  let truncated = false;
   pi.exec = async (command, args) => {
     assert.equal(command, "git");
-    return { code: 0, stdout: args[0] === "rev-parse" ? hash : diff };
+    if (args[0] === "rev-parse") {
+      assert.equal(args.at(-1), "main^{commit}");
+      return { code: 0, stdout: hash };
+    }
+    return { code: 0, stdout: "", truncated };
   };
-  ctx.ui.editor = async () => undefined;
-  await commands["review-independent"]("", ctx);
-  assert.match(notifications[0], /No tracked changes/);
-  diff = "some tracked changes";
-  await commands["review-independent"]("", ctx);
-  assert.equal(notifications.length, 1);
+  await assert.rejects(delegates.reviewer({ task: "fix", checks: " " }, ctx), /actual checks/);
+  const review = { task: "fix", checks: "skipped: docs only", base: "main" };
+  await assert.rejects(delegates.reviewer(review, ctx), /No tracked changes/);
+  truncated = true;
+  await assert.rejects(delegates.reviewer(review, ctx), /exceeds 100 KB/);
+});
+
+test("explorer uses GPT-6.2 with read-only tools and reports a failed child", async () => {
+  const { delegates, pi, ctx } = fixture();
+  pi.exec = async (command, args) => {
+    assert.equal(command, "pi");
+    assert.deepEqual(args.slice(7, 13), ["--tools", "read,grep,find,ls", "--model", "openai-codex/gpt-6.2-sol", "--thinking", "low"]);
+    assert.equal(await readFile(args[13].slice(1), "utf8"), "Where is it?");
+    return { code: 1, stdout: "" };
+  };
+  await assert.rejects(delegates.explorer({ question: "Where is it?" }, ctx), /Delegation with openai-codex\/gpt-6\.2-sol failed/);
+  ctx.modelRegistry.getAvailable = () => [];
+  pi.exec = async () => assert.fail("Must not launch an unavailable model");
+  await assert.rejects(delegates.explorer({ question: "Where is it?" }, ctx), /is unavailable/);
 });

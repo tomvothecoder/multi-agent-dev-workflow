@@ -94,7 +94,9 @@ Run `make install-pi-commands` to copy the five OpenCode command templates into 
 Run `make install-pi-workflow`, then `/reload` in Pi. This installs the extension without replacing an existing copy. It takes precedence over the `/plan` prompt template.
 
 - `/plan [task]` keeps the plan in your current conversation and limits the model to built-in read/search tools. Paste issue details if needed. Use `/plan-exit` to restore your previous tools; this does not approve the plan or start implementation.
-- `/review-independent [base]` reviews the tracked diff against `HEAD` by default. Use a different base (e.g. `main`) to include committed changes. Enter the task and actual check results when prompted. Untracked files are excluded. Findings appear in the current conversation; no fixes are applied. The reviewer uses the active model in a fresh Pi process without extensions or MCP, so the model must work without extensions and `pi` must be on `PATH`.
+- The current session is the primary. To make GPT‑6.2 Sol its default without limiting manual model selection, merge `"defaultProvider": "openai-codex"`, `"defaultModel": "gpt-6.2-sol"`, and `"defaultThinkingLevel": "medium"` into your Pi `settings.json`.
+- The primary can delegate a focused codebase question to `explorer` (GPT‑6.2 Sol, low). It calls `reviewer` (Copilot Claude Opus 5.5, high) once after checks for risky changes or when requested. `/review-independent` is replaced by delegation; to request it directly, ask Pi for an independent review. `/review-again` still reviews and fixes in the primary session.
+- Both subagents run in fresh Pi processes with read/search tools only. Keep `pi` on `PATH` and authenticate both providers. `/implement` captures the Git base before changes so review includes subsequent commits; outside that workflow, give an explicit Git base for committed changes. Untracked files are excluded.
 
 These are model tool restrictions, not OS sandboxes. Review evidence and inspected files can be sent to your model provider.
 
