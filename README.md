@@ -98,6 +98,20 @@ Run `make install-pi-workflow`, then `/reload` in Pi. This installs the extensio
 - The primary can delegate a focused codebase question to `explorer` (GPT‑6.2 Sol, low). It calls `reviewer` (Copilot Claude Opus 5.5, high) once after checks for risky changes or when requested. `/review-independent` is replaced by delegation; to request it directly, ask Pi for an independent review. `/review-again` still reviews and fixes in the primary session.
 - Both subagents run in fresh Pi processes with read/search tools only. Keep `pi` on `PATH` and authenticate both providers. `/implement` captures the Git base before changes so review includes subsequent commits; outside that workflow, give an explicit Git base for committed changes. Untracked files are excluded.
 
+#### Host approvals and isolation
+
+Normal Pi sessions ask before recognized direct Bash calls that force-push, delete remote refs, discard local Git work, escalate privileges, or change system packages, services, firewall rules, or disks. Pi shows the full command and allows it once only if approved; declining, canceling, or having no confirmation UI blocks it. Plan mode still blocks shell tools outright. Routine edits, checks, local dependency installs, ordinary pushes, and PR creation do not prompt; existing authorization rules still apply.
+
+These gates prevent some accidents, not access: complex shell syntax (including heredocs) can cause missed or extra prompts. The gates do not inspect scripts, aliases, or other tools, and do not intercept commands you type yourself.
+
+| Work | Recommended setup |
+| --- | --- |
+| Supervised work in a trusted repo with established dependencies | Host Pi with the gates. Use the lockfile and project `uv` or Conda environment; neither limits OS permissions. |
+| New or upgraded dependencies, unfamiliar install hooks or build scripts | Use a disposable container or, for stronger isolation, a VM. |
+| Unattended multi-agent work | Run all of Pi, subagents, and checks inside a disposable container or VM. Expose only the intended checkout, not your home directory, SSH agent, or Docker socket. Provide only required model credentials, restrict network access where practical, and review and publish from the host. |
+
+Pi's optional Gondolin example isolates built-in tools, not the whole workflow. It is not installed by this repo.
+
 These are model tool restrictions, not OS sandboxes. Review evidence and inspected files can be sent to your model provider.
 
 ## Providers

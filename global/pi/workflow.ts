@@ -1,6 +1,6 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { ExtensionAPI, ExtensionToolContext } from "@earendil-works/pi-coding-agent";
 import type { TSchema } from "typebox";
 
@@ -42,10 +42,16 @@ export default function workflow(pi: ExtensionAPI) {
     }
   });
 
-  pi.on("tool_call", event => {
+  pi.on("tool_call", async (event, ctx) => {
     if (previousTools && !pi.getAllTools().some(tool => tool.name === event.toolName && isReadOnlyTool(tool))) {
       return { block: true, reason: "Plan mode permits only built-in read/search tools. Use /plan-exit to leave it." };
     }
+    if (event.toolName !== "bash" || typeof event.input.command !== "string") return;
+    const command = event.input.command;
+    if (!needsApproval(command)) return;
+    if (!ctx.hasUI) return { block: true, reason: "Host command blocked: interactive approval is unavailable." };
+    const choice = await ctx.ui.select(`Approve this host command?\n\n${command}`, ["Deny", "Allow once"]);
+    if (choice !== "Allow once") return { block: true, reason: "Host command was not approved." };
   });
 
   pi.on("input", async (event, ctx) => {
@@ -135,6 +141,74 @@ Task: ${args.trim()}`);
 
 function isReadOnlyTool(tool: ReturnType<ExtensionAPI["getAllTools"]>[number]) {
   return READ_ONLY.includes(tool.name) && tool.sourceInfo.path === `builtin:${tool.name}`;
+}
+
+function needsApproval(command: string) {
+  // Match direct commands, not shell evaluation. Keep quoted separators and arguments together.
+  const segments: string[][] = [[]];
+  const word = String.raw`(?:"(?:[^"\\]|\\[\s\S])*"|'[^']*'|\\[^\n]|[^\s;&|()<> '"\\])+`;
+  const tokens = new RegExp(String.raw`#[^\n]*|(?:\d*|&)(?:>>|>&|<>|<&|>|<)[ \t]*(?:${word})?|([;&|()\n]+)|(${word})`, "g");
+  for (const token of command.replace(/\\\n/g, "").matchAll(tokens)) {
+    if (token[1]) segments.push([]);
+    else if (token[2]) segments.at(-1)!.push(token[2].replace(/"((?:[^"\\]|\\[\s\S])*)"|'([^']*)'|\\(.)/g,
+      (_, double, single, escaped) => double?.replace(/\\(["\\])/g, "$1") ?? single ?? escaped));
+  }
+  return segments.some(segment => {
+    while (segment.length && (/^[A-Za-z_][A-Za-z_0-9]*=/.test(segment[0]) ||
+      ["command", "exec", "env", "then", "do", "if", "else", "!"].includes(segment[0]))) segment.shift();
+    const [program = "", ...args] = segment;
+    const name = basename(program);
+    const positional = args.filter(arg => !arg.startsWith("-"));
+    if (name === "git") return destructiveGit(args);
+    if (/^(sudo|su|doas|shutdown|reboot|halt|poweroff|mkfs(?:\..+)?|iptables-restore|ip6tables-restore)$/.test(name)) return true;
+    if (/^(fdisk|sfdisk)$/.test(name)) return !args.some(arg => /^(?:-l|--list|--dump)$/.test(arg));
+    if (name === "parted") return positional.some(arg => /^(?:mklabel|mktable|mkpart|rm|resizepart|rescue|name|set|toggle)$/.test(arg)) ||
+      !args.some(arg => /^(?:-l|--list|print)$/.test(arg));
+    if (/^ip6?tables$/.test(name) || name === "iptables") return args.some(arg => /^(?:-[ADIFNPRXZ]|--(?:append|delete|insert|flush|new-chain|policy|replace|delete-chain|zero|rename-chain))$/.test(arg));
+    if (name === "nft") return args.some(arg => /^(add|delete|insert|replace|flush|reset|create|rename|-f|--file)$/.test(arg));
+    if (/^(systemctl|service|launchctl)$/.test(name)) {
+      return positional.some(arg => /^(start|stop|restart|reload|enable|disable|mask|unmask|kill|bootout|bootstrap|load|unload|daemon-reload)$/.test(arg));
+    }
+    if (/^(apt|apt-get|dnf|yum|zypper|brew|port|apk)$/.test(name)) {
+      return /^(install|remove|uninstall|purge|upgrade|dist-upgrade|full-upgrade|autoremove|add|del)$/.test(positional[0] ?? "");
+    }
+    if (name === "pacman") return args.some(arg => /^-[SUR]/.test(arg) || /^(--sync|--upgrade|--remove)$/.test(arg));
+    if (name === "diskutil") return /^(erase\w*|partitionDisk|resizeVolume|zeroDisk|secureErase)$/.test(positional[0] ?? "");
+    if (name === "ufw") return !/^(status|show|version)$/.test(positional[0] ?? "status");
+    return false;
+  });
+}
+
+function destructiveGit(args: string[]) {
+  let index = 0;
+  while (args[index]?.startsWith("-")) {
+    index += /^(?:-C|-c|--git-dir|--work-tree|--namespace|--config-env)$/.test(args[index]) ? 2 : 1;
+  }
+  const action = args[index];
+  const tail = args.slice(index + 1);
+  const delimiter = tail.indexOf("--");
+  const before = delimiter < 0 ? tail : tail.slice(0, delimiter);
+  const flags = before.filter(arg => arg.startsWith("-"));
+  const has = (...values: string[]) => flags.some(flag => values.includes(flag.split("=")[0]));
+  const short = (pattern: RegExp) => flags.some(flag => /^-[^-]/.test(flag) && pattern.test(flag.slice(1)));
+  switch (action) {
+    case "push": {
+      const positional = tail.filter((arg, i) => !arg.startsWith("-") && tail[i - 1] !== "--repo");
+      const refspecs = positional.slice(has("--repo") ? 0 : 1);
+      return !has("--dry-run") && !short(/n/) && (has("--force", "--force-with-lease", "--delete", "--mirror", "--prune") ||
+        short(/[fd]/) || refspecs.some(ref => ref.startsWith("+") || /^:[^:]/.test(ref)));
+    }
+    case "reset": return has("--hard");
+    case "clean": return !has("--dry-run") && !short(/n/);
+    case "branch": return short(/D/) || ((has("--delete") || short(/d/)) && (has("--force") || short(/f/)));
+    case "restore": return has("--worktree") || short(/W/) || !(has("--staged") || short(/S/));
+    case "checkout": return has("--force", "--ours", "--theirs", "--merge", "--patch", "--pathspec-from-file") || short(/[fmpB]/) ||
+      (delimiter >= 0 && delimiter + 1 < tail.length) || before.some(arg => arg === "." || arg.startsWith(":/")) ||
+      (!short(/b/) && !has("--orphan") && before.filter(arg => !arg.startsWith("-")).length > 1);
+    case "switch": return has("--discard-changes", "--force", "--force-create") || short(/[fC]/);
+    case "stash": return /^(drop|clear)$/.test(before.find(arg => !arg.startsWith("-")) ?? "");
+    default: return false;
+  }
 }
 
 async function resolveBase(pi: ExtensionAPI, ctx: { cwd: string }, ref: string, signal?: AbortSignal) {

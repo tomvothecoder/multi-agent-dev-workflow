@@ -50,10 +50,11 @@ test("plan limits model tools, keeps the prompt in chat and restores the prior s
   await commands.plan("Fix the bug", ctx);
   assert.deepEqual(pi.getActiveTools(), ["read", "grep", "find"]);
   assert.match(messages[0], /Task: Fix the bug/);
-  assert.equal(events.tool_call({ toolName: "ls" }).block, true);
-  assert.equal(events.tool_call({ toolName: "bash" }).block, true);
-  assert.equal(events.tool_call({ toolName: "codemode" }).block, true);
-  assert.equal(events.tool_call({ toolName: "read" }), undefined);
+  ctx.ui.select = async () => assert.fail("Plan mode must not ask for approval");
+  assert.equal((await events.tool_call({ toolName: "ls" }, ctx)).block, true);
+  assert.match((await events.tool_call({ toolName: "bash", input: { command: "sudo reboot" } }, ctx)).reason, /Plan mode/);
+  assert.equal((await events.tool_call({ toolName: "codemode" }, ctx)).block, true);
+  assert.equal(await events.tool_call({ toolName: "read" }, ctx), undefined);
   assert.equal((await events.input({ text: "/implement" }, ctx)).action, "handled");
   await assert.rejects(delegates.explorer({ question: "Where?" }, ctx), /disabled in plan mode/);
   pi.setActiveTools(["bash"]);
@@ -68,6 +69,44 @@ test("plan limits model tools, keeps the prompt in chat and restores the prior s
   resumed.pi.exec = async () => ({ code: 0, stdout: hash });
   assert.equal(await resumed.events.input({ text: "/implement" }, resumed.ctx), undefined);
   assert.deepEqual(resumed.messages, []);
+});
+
+test("host gates require per-call approval for direct destructive commands", async () => {
+  const { events, ctx } = fixture();
+  const check = command => events.tool_call({ toolName: "bash", input: { command } }, ctx);
+  for (const command of ["git -C repo push --force-with-lease=main origin main", "git push origin +main:main",
+    "git push origin ':old'", "git push --delete origin old", "git clean -fd", "git branch -df old",
+    "git reset --hard HEAD", "git restore file", "git restore -SW file", "git checkout HEAD -- file",
+    "git checkout .", "git switch --discard-changes main", "git switch --force-create topic", "git stash drop",
+    "git push \\" + "\n--force-with-lease origin main", "make test && /usr/bin/sudo reboot", "su root",
+    "systemctl restart nginx", "brew upgrade", "diskutil eraseDisk APFS test disk2", "nft flush ruleset"]) {
+    ctx.ui.select = async (title, options) => {
+      assert.ok(title.endsWith(command));
+      assert.deepEqual(options, ["Deny", "Allow once"]);
+      return "Deny";
+    };
+    assert.equal((await check(command)).block, true, command);
+  }
+  ctx.ui.select = async () => "Allow once";
+  assert.equal(await check("git reset --hard"), undefined);
+  ctx.ui.select = async () => undefined;
+  assert.equal((await check("git reset --hard")).block, true);
+  ctx.hasUI = false;
+  ctx.ui.select = async () => assert.fail("Must not prompt without UI");
+  assert.match((await check("sudo reboot")).reason, /approval is unavailable/);
+});
+
+test("host gates leave routine development and publishing prompt-free", async () => {
+  const { events, ctx } = fixture();
+  ctx.ui.select = async () => assert.fail("Routine commands must not prompt");
+  for (const command of ["git push origin main", "gh pr create --draft", "gh pr merge --squash",
+    "git clean -nfd", "git push --dry-run --force origin main", "git switch main", "git checkout -b branch main",
+    "git restore --staged file", "git reset --soft HEAD~1", "git branch -d old", "git commit -m 'sudo reboot'",
+    "git checkout main 2>&1", "git checkout main > /dev/null", "git status # ; sudo reboot",
+    'gh pr create --body "Description\ngit reset --hard is documented below"',
+    "printf '%s' 'x; git reset --hard'", "make test", "uv sync", "npm ci", "systemctl status nginx", "nft list ruleset"]) {
+    assert.equal(await events.tool_call({ toolName: "bash", input: { command } }, ctx), undefined, command);
+  }
 });
 
 test("review uses the tracked diff and check evidence without triggering an implementation turn", async () => {
