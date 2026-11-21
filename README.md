@@ -85,18 +85,18 @@ make install-opencode-commands
 
 This copies missing files from `global/opencode/commands/` into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/commands/`. Existing same-named commands (including symlinks) are preserved. Use `make update-opencode-commands` to replace only OpenCode's five workflow commands; this overwrites local edits. `/plan` overrides OpenCode's built-in command of the same name, if present.
 
-### Pi commands (optional)
+### Pi workflow (optional)
 
-Run `make install-pi-commands` to copy the five OpenCode command templates into `${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}/prompts/`, preserving existing files and symlinks. Run `/reload` in Pi. This target is separate from `make install` and does not install skills, subagents, or permission rules.
+Run `make install-pi`, then `/reload` in Pi. This installs or refreshes the global `AGENTS.md`, five prompt templates, and the workflow extension in `${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}`. **Back up local edits to those files first.** Refresh refuses symlinked managed paths. Other config and the Pi CLI are unchanged; `make install` only covers OpenCode.
 
-### Pi plan mode and independent review (optional)
-
-Run `make install-pi-workflow`, then `/reload` in Pi. This installs the extension without replacing an existing copy. It takes precedence over the `/plan` prompt template.
+Use `make install-pi-instructions`, `make install-pi-commands`, or `make install-pi-workflow` to install just one component without replacing existing files. The extension takes precedence over the `/plan` prompt template.
 
 - `/plan [task]` keeps the plan in your current conversation and limits the model to built-in read/search tools. Paste issue details if needed. Use `/plan-exit` to restore your previous tools; this does not approve the plan or start implementation.
 - The current session is the primary. To make GPT‑6.2 Sol its default without limiting manual model selection, merge `"defaultProvider": "openai-codex"`, `"defaultModel": "gpt-6.2-sol"`, and `"defaultThinkingLevel": "medium"` into your Pi `settings.json`.
 - The primary can delegate a focused codebase question to `explorer` (GPT‑6.2 Sol, low). It calls `reviewer` (Copilot Claude Opus 5.5, high) once after checks for risky changes or when requested. `/review-independent` is replaced by delegation; to request it directly, ask Pi for an independent review. `/review-again` still reviews and fixes in the primary session.
 - Both subagents run in fresh Pi processes with read/search tools only. Keep `pi` on `PATH` and authenticate both providers. `/implement` captures the Git base before changes so review includes subsequent commits; outside that workflow, give an explicit Git base for committed changes. Untracked files are excluded.
+
+These are model tool restrictions, not OS sandboxes. Review evidence and inspected files can be sent to your model provider.
 
 #### Host approvals and isolation
 
@@ -111,8 +111,6 @@ These gates prevent some accidents, not access: complex shell syntax (including 
 | Unattended multi-agent work | Run all of Pi, subagents, and checks inside a disposable container or VM. Expose only the intended checkout, not your home directory, SSH agent, or Docker socket. Provide only required model credentials, restrict network access where practical, and review and publish from the host. |
 
 Pi's optional Gondolin example isolates built-in tools, not the whole workflow. It is not installed by this repo.
-
-These are model tool restrictions, not OS sandboxes. Review evidence and inspected files can be sent to your model provider.
 
 ## Providers
 

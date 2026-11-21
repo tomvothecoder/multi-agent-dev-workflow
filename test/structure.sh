@@ -106,7 +106,7 @@ make -s -C "$CHECK_DIR" > "$CHECK_DIR/help"
 for section in Installation Updates 'Optional profiles' Validation; do
   rg -Fxq "$section:" "$CHECK_DIR/help"
 done
-for target in update-all update-skills update-commands update-skills-commands install-pi-commands install-pi-workflow install-lazygit setup-lazygit lazygit-test; do
+for target in update-all update-skills update-commands update-skills-commands install-pi install-pi-instructions install-pi-commands install-pi-workflow install-lazygit setup-lazygit lazygit-test; do
   rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"
 done
 rg -q '^  uninstall[[:space:]]' "$CHECK_DIR/help"
@@ -137,6 +137,31 @@ cmp "$ROOT/global/pi/workflow.ts" "$PI_EXTENSION"
 printf 'custom extension\n' > "$PI_EXTENSION"
 PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi-workflow >/dev/null
 rg -Fxq 'custom extension' "$PI_EXTENSION"
+
+PI_INSTRUCTIONS="$PI_CUSTOM_DIR/AGENTS.md"
+PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi-instructions >/dev/null
+cmp "$ROOT/AGENTS.md" "$PI_INSTRUCTIONS"
+printf 'custom instructions\n' > "$PI_INSTRUCTIONS"
+PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi-instructions >/dev/null
+rg -Fxq 'custom instructions' "$PI_INSTRUCTIONS"
+
+# Refresh rejects linked files before replacing any other component.
+if PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi >"$CHECK_DIR/error" 2>&1; then exit 1; fi
+rg -Fq "Cannot refresh Pi file: $PI_CUSTOM_DIR/prompts/draft-pr.md" "$CHECK_DIR/error"
+rg -Fxq 'custom instructions' "$PI_INSTRUCTIONS"
+rm "$PI_CUSTOM_DIR/prompts/draft-pr.md"
+printf '{"unrelated":true}\n' > "$PI_CUSTOM_DIR/settings.json"
+PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi >/dev/null
+cmp "$ROOT/AGENTS.md" "$PI_INSTRUCTIONS"
+cmp "$ROOT/global/pi/workflow.ts" "$PI_EXTENSION"
+for command in plan export-plan implement review-again draft-pr; do
+  cmp "$ROOT/global/opencode/commands/$command.md" "$PI_CUSTOM_DIR/prompts/$command.md"
+done
+rg -Fxq '{"unrelated":true}' "$PI_CUSTOM_DIR/settings.json"
+
+# A clean install uses the default Pi directory.
+HOME="$CHECK_DIR/fresh pi home" PI_CODING_AGENT_DIR= make -s -C "$ROOT" install-pi >/dev/null
+cmp "$ROOT/AGENTS.md" "$CHECK_DIR/fresh pi home/.pi/agent/AGENTS.md"
 
 mkdir -p "$CHECK_DIR/global"
 cat > "$CHECK_DIR/global/sync-opencode-config-sections.py" <<'EOF'

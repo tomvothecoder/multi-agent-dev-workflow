@@ -9,6 +9,8 @@ help:
 		'  install-skills        Install missing OpenCode skills' \
 		'  install-commands      Install missing OpenCode commands' \
 		'  install-opencode      Alias for install' \
+		'  install-pi            Install or refresh all Pi workflow files' \
+		'  install-pi-instructions Install the global Pi AGENTS.md if missing' \
 		'  install-pi-commands   Install missing Pi workflow prompt templates' \
 		'  install-pi-workflow   Install Pi plan mode and independent review' \
 		'  install-lazygit       Install Lazygit (Linux pin: LAZYGIT_VERSION=0.66.0)' \
@@ -50,29 +52,13 @@ install-skills install-opencode-skills:
 install-commands install-opencode-commands:
 	@./global/install-opencode-config.sh commands
 
-.PHONY: install-pi-commands install-pi-workflow install-lazygit setup-lazygit
+.PHONY: install-pi install-pi-instructions install-pi-commands install-pi-workflow install-lazygit setup-lazygit
 
-install-pi-commands:
-	@set -eu; \
-	prompts="$${PI_CODING_AGENT_DIR:-$$HOME/.pi/agent}/prompts"; \
-	mkdir -p "$$prompts"; \
-	for command in plan export-plan implement review-again draft-pr; do \
-		dest="$$prompts/$$command.md"; \
-		if [ ! -e "$$dest" ] && [ ! -L "$$dest" ]; then \
-			cp "global/opencode/commands/$$command.md" "$$dest"; \
-		fi; \
-	done; \
-	printf 'Pi workflow commands: %s\n' "$$prompts"
+install-pi:
+	@bash ./global/install-pi-config.sh all
 
-install-pi-workflow:
-	@set -eu; \
-	dir="$${PI_CODING_AGENT_DIR:-$$HOME/.pi/agent}/extensions"; \
-	dest="$$dir/multi-agent-dev-workflow.ts"; \
-	mkdir -p "$$dir"; \
-	if [ ! -e "$$dest" ] && [ ! -L "$$dest" ]; then \
-		cp global/pi/workflow.ts "$$dest"; \
-	fi; \
-	printf 'Pi workflow extension: %s\n' "$$dest"
+install-pi-instructions install-pi-commands install-pi-workflow:
+	@bash ./global/install-pi-config.sh $(patsubst install-pi-%,%,$@)
 
 install-lazygit:
 	@./global/install-lazygit.sh
