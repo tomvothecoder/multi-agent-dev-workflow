@@ -9,14 +9,10 @@ help:
 		'  install-skills        Install missing OpenCode skills' \
 		'  install-commands      Install missing OpenCode commands' \
 		'  install-opencode      Alias for install' \
-		'  install-pi            Install or refresh all Pi workflow files' \
-		'  install-pi-instructions Install the global Pi AGENTS.md if missing' \
-		'  install-pi-commands   Install missing Pi workflow prompt templates' \
-		'  install-pi-workflow   Install Pi plan mode and independent review' \
 		'  install-lazygit       Install Lazygit (Linux pin: LAZYGIT_VERSION=0.66.0)' \
 		'  setup-lazygit         Suggest ~/worktrees for new Lazygit worktrees' \
 		'  status                List present and missing workflow and legacy files' \
-		'  uninstall             Preview legacy Claude Code and Caveman cleanup (APPLY=1 to remove)' \
+		'  uninstall             Preview OpenCode, Claude Code, and Caveman cleanup (APPLY=1 to remove)' \
 		'' 'Updates:' \
 		'  update-all            Run the OpenCode update sequence, stopping on failure' \
 		'  update-opencode-all   Alias for update-all' \
@@ -36,9 +32,8 @@ help:
 		'  test                  Run fast template and Makefile checks' \
 		'  test-all              Run all checks, including isolated installer lifecycles' \
 		'  lazygit-test          Run isolated Lazygit installer and config checks' \
-		'  uninstall-test        Run isolated legacy cleanup checks' \
-		'  structure-test        Validate the OpenCode template' \
-		'  pi-test               Test Pi workflow commands (Node.js 22.18+)'
+		'  uninstall-test        Run isolated uninstall checks' \
+		'  structure-test        Validate the OpenCode template'
 
 # --- Installation -------------------------------------------------------------
 
@@ -53,13 +48,7 @@ install-skills install-opencode-skills:
 install-commands install-opencode-commands:
 	@./global/install-opencode-config.sh commands
 
-.PHONY: install-pi install-pi-instructions install-pi-commands install-pi-workflow install-lazygit setup-lazygit
-
-install-pi:
-	@bash ./global/install-pi-config.sh all
-
-install-pi-instructions install-pi-commands install-pi-workflow:
-	@bash ./global/install-pi-config.sh $(patsubst install-pi-%,%,$@)
+.PHONY: install-lazygit setup-lazygit
 
 install-lazygit:
 	@./global/install-lazygit.sh
@@ -128,7 +117,7 @@ uninstall-nersc-rules:
 
 # --- Validation ---------------------------------------------------------------
 
-.PHONY: test test-all structure-test lazygit-test uninstall-test pi-test
+.PHONY: test test-all structure-test lazygit-test uninstall-test
 
 test:
 	@./test/structure.sh
@@ -147,6 +136,3 @@ structure-test:
 
 uninstall-test:
 	@ruby ./test/uninstall.rb
-
-pi-test:
-	@node --test ./test/pi-workflow.mjs

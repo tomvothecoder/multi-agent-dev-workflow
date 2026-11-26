@@ -85,33 +85,6 @@ make install-opencode-commands
 
 This copies missing files from `global/opencode/commands/` into `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/commands/`. Existing same-named commands (including symlinks) are preserved. Use `make update-opencode-commands` to replace only OpenCode's five workflow commands; this overwrites local edits. `/plan` overrides OpenCode's built-in command of the same name, if present.
 
-### Pi workflow (optional)
-
-Run `make install-pi`, then `/reload` in Pi. This installs or refreshes the global `AGENTS.md`, five prompt templates, and the workflow extension in `${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}`. **Back up local edits to those files first.** Refresh refuses symlinked managed paths. Other config and the Pi CLI are unchanged; `make install` only covers OpenCode.
-
-Use `make install-pi-instructions`, `make install-pi-commands`, or `make install-pi-workflow` to install just one component without replacing existing files. The extension takes precedence over the `/plan` prompt template.
-
-- `/plan [task]` keeps the plan in your current conversation and limits the model to built-in read/search tools. Paste issue details if needed. Use `/plan-exit` to restore your previous tools; this does not approve the plan or start implementation.
-- The current session is the primary. To make GPT‑6.2 Sol its default without limiting manual model selection, merge `"defaultProvider": "openai-codex"`, `"defaultModel": "gpt-6.2-sol"`, and `"defaultThinkingLevel": "medium"` into your Pi `settings.json`.
-- The primary can delegate a focused codebase question to `explorer` (GPT‑6.2 Sol, low). It calls `reviewer` (Copilot Claude Opus 5.5, high) once after checks for risky changes or when requested. `/review-independent` is replaced by delegation; to request it directly, ask Pi for an independent review. `/review-again` still reviews and fixes in the primary session.
-- Both subagents run in fresh Pi processes with read/search tools only. Keep `pi` on `PATH` and authenticate both providers. `/implement` captures the Git base before changes so review includes subsequent commits; outside that workflow, give an explicit Git base for committed changes. Untracked files are excluded.
-
-These are model tool restrictions, not OS sandboxes. Review evidence and inspected files can be sent to your model provider.
-
-#### Host approvals and isolation
-
-Normal Pi sessions ask before recognized direct Bash calls that force-push, delete remote refs, discard local Git work, escalate privileges, or change system packages, services, firewall rules, or disks. Pi shows the full command and allows it once only if approved; declining, canceling, or having no confirmation UI blocks it. Plan mode still blocks shell tools outright. Routine edits, checks, local dependency installs, ordinary pushes, and PR creation do not prompt; existing authorization rules still apply.
-
-These gates prevent some accidents, not access: complex shell syntax (including heredocs) can cause missed or extra prompts. The gates do not inspect scripts, aliases, or other tools, and do not intercept commands you type yourself.
-
-| Work | Recommended setup |
-| --- | --- |
-| Supervised work in a trusted repo with established dependencies | Host Pi with the gates. Use the lockfile and project `uv` or Conda environment; neither limits OS permissions. |
-| New or upgraded dependencies, unfamiliar install hooks or build scripts | Use a disposable container or, for stronger isolation, a VM. |
-| Unattended multi-agent work | Run all of Pi, subagents, and checks inside a disposable container or VM. Expose only the intended checkout, not your home directory, SSH agent, or Docker socket. Provide only required model credentials, restrict network access where practical, and review and publish from the host. |
-
-Pi's optional Gondolin example isolates built-in tools, not the whole workflow. It is not installed by this repo.
-
 ## Providers
 
 The OpenCode template enables these providers:
@@ -186,17 +159,18 @@ make update-opencode-instructions
 
 ## Check installation status
 
-Run `make status` to list present and missing files for OpenCode, Pi, and the retired Claude Code and Caveman integrations. It does not modify files or verify their contents or ownership.
+Run `make status` to list present and missing files for OpenCode and the retired Claude Code and Caveman integrations. It does not modify files or verify their contents or ownership.
 
-## Clean up retired integrations
+## Uninstall workflow files
 
 ```bash
 make uninstall          # Preview
 make uninstall APPLY=1  # Apply after reviewing the preview
 ```
 
-Requires Ruby 2.6+. Close Claude Code and OpenCode before applying. Use `CLAUDE_CONFIG_DIR` or `OPENCODE_CONFIG_DIR` to select a custom location. Defaults are `$HOME/.claude` and `${XDG_CONFIG_HOME:-$HOME/.config}/opencode`.
+Requires Ruby 2.6+. Close Claude Code and OpenCode before applying. Use `CLAUDE_CONFIG_DIR` or `OPENCODE_CONFIG_DIR` to select a custom location. Defaults are `$HOME/.claude` for Claude Code, `$HOME/.config/opencode` for OpenCode, and `${XDG_CONFIG_HOME:-$HOME/.config}/opencode` for Caveman.
 
+- **OpenCode:** Removes workflow files that exactly match the current templates. Customized files and files from older versions are preserved. If Caveman cleanup edits the config or instructions, preview again to see whether the resulting files match.
 - **Claude Code:** Removes files that exactly match retired templates. The old installer did not track ownership, so review each match before applying. Review modified files and settings manually; for example, `includeGitInstructions: false` may remain in a shared `settings.json`.
 - **Caveman:** Removes the files, registration, and instruction block verified against `.caveman-install.json`. It leaves untracked installs alone and stops on modified or unsafe managed paths. Resolve those conflicts before retrying cleanup or refreshing OpenCode instructions.
 
@@ -251,6 +225,6 @@ make uninstall-test
 - `global/opencode/commands/`: issue planning, plan export, implementation, optional review/fix, and human-gated draft PR prompts.
 - `global/install-opencode-config.sh`: repeatable missing-component installer and explicit skill/command updater.
 - `global/install-lazygit.sh`, `global/setup-lazygit.sh`, `global/setup-lazygit-config.rb`: optional Lazygit installation and comment-preserving worktree configuration.
-- `global/uninstall-legacy.rb`, `global/manage-caveman.rb`: cleanup for retired integrations.
+- `global/uninstall-legacy.rb`, `global/manage-caveman.rb`: uninstall workflow files and clean up retired integrations.
 - `profiles/nersc/`: optional filesystem instruction profile.
 - `test/`: configuration and lifecycle checks.

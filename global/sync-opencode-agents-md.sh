@@ -24,7 +24,8 @@ if [ -f "$DESTINATION" ] && cmp -s "$TEMPLATE" "$DESTINATION"; then
 fi
 
 if [ -f "$DESTINATION" ] && grep -Eq '<!-- caveman-(begin|end) -->' "$DESTINATION"; then
-  printf 'Legacy Caveman instructions found. Run make uninstall before updating: %s\n' "$DESTINATION" >&2
+  printf 'Legacy Caveman instructions found: %s\n' "$DESTINATION" >&2
+  printf 'Run make uninstall to preview cleanup before updating. Applying also removes matching OpenCode workflow files.\n' >&2
   exit 1
 fi
 

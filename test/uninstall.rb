@@ -62,14 +62,15 @@ Dir.mktmpdir do |home|
   check(output.include?('Run make uninstall'), output)
   check(File.read(instructions).include?(block), 'Instructions update removed the legacy block')
 
+  stock_command = write_file(opencode, 'commands/plan.md', File.binread(File.join(ROOT, 'global/opencode/commands/plan.md')))
   changed = write_file(opencode, CAVEMAN_FILES.first, 'modified plugin')
   output = run_make(env, 'uninstall', 'APPLY=1', success: false)
   check(output.include?('missing or modified'), output)
-  check(watched.map { |path| File.binread(path) } == before, 'Failed uninstall changed a file')
+  check(watched.map { |path| File.binread(path) } == before && File.file?(stock_command), 'Failed uninstall changed a file')
   File.write(changed, CAVEMAN_FILES.first)
 
   run_make(env, 'uninstall', 'APPLY=1')
-  check(!File.exist?(owned) && !File.exist?(manifest), 'Managed files were not removed')
+  check(!File.exist?(owned) && !File.exist?(manifest) && !File.exist?(stock_command), 'Managed files were not removed')
   check(CAVEMAN_FILES.none? { |name| File.exist?(File.join(opencode, name)) }, 'Caveman files remain')
   check(File.read(config).include?('// Keep this comment') && !File.read(config).include?('caveman'), 'Incorrect config cleanup')
   check(File.read(config).include?('"keep"') && File.read(config).include?('"test": true'), 'Unrelated config changed')
@@ -95,6 +96,26 @@ Dir.mktmpdir do |home|
   output = run_make(env, 'uninstall', 'APPLY=1')
   check(output.include?('Skipping Caveman:') && output.include?("Removed #{owned}"), output)
   check(!File.exist?(owned), 'Claude-only uninstall left managed settings')
+
+  run_make(env, 'install')
+  opencode = File.join(home, '.config/opencode')
+  modified = write_file(opencode, 'commands/plan.md', 'custom plan')
+  unrelated = write_file(opencode, 'commands/local.md', 'local command')
+  linked = File.join(opencode, 'commands/draft-pr.md')
+  File.unlink(linked)
+  File.symlink(File.join(ROOT, 'global/opencode/commands/draft-pr.md'), linked)
+  stock = Dir.glob(File.join(opencode, '**/*')).select { |path| File.file?(path) } - [modified, unrelated, linked]
+
+  output = run_make(env, 'uninstall')
+  check(stock.length == 7 && stock.all? { |path| output.include?("Would remove #{path}") && File.file?(path) }, output)
+  output = run_make(env, 'uninstall', 'APPLY=1')
+  check(stock.all? { |path| output.include?("Removed #{path}") && !File.exist?(path) }, output)
+  check(File.read(modified) == 'custom plan' && File.read(unrelated) == 'local command' && File.symlink?(linked), 'Changed custom OpenCode files')
+  run_make(env, 'uninstall', 'APPLY=1')
+
+  templates = File.join(ROOT, 'global/opencode')
+  output = run_make(env.merge('OPENCODE_CONFIG_DIR' => templates), 'uninstall')
+  check(!output.include?("Would remove #{templates}/"), 'Uninstall would remove its source templates')
 end
 
-puts 'Legacy cleanup tests passed.'
+puts 'Uninstall tests passed.'

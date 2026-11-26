@@ -216,8 +216,8 @@ module Caveman
     root = File.expand_path(configured.nil? || configured.empty? ? runtime : configured)
     manifest = File.join(root, MANIFEST)
     unless File.exist?(manifest) || File.symlink?(manifest)
-      puts "Skipping Caveman: no managed installation in #{root}. Continuing with Claude Code cleanup."
-      return
+      puts "Skipping Caveman: no managed installation in #{root}. Continuing cleanup."
+      return []
     end
 
     lock = safe_path(File.join(root, '.caveman-install.lock'), root: root, directory: true)
@@ -242,7 +242,7 @@ module Caveman
                   [instructions, text[0...start] + text[finish..-1]], [manifest, nil]]
       unless apply_changes
         changes.each { |path, content| puts "Would #{content ? 'edit' : 'remove'} #{path}" }
-        return
+        return changes.map(&:first)
       end
 
       apply(changes)
@@ -252,6 +252,7 @@ module Caveman
         Dir.rmdir(path) if Dir.empty?(path)
       end
       puts 'Restart OpenCode to unload Caveman.'
+      changes.map(&:first)
     ensure
       Dir.rmdir(lock) if locked
     end

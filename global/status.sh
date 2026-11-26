@@ -14,7 +14,6 @@ report() {
 }
 
 opencode="${OPENCODE_CONFIG_DIR:-$HOME/.config/opencode}"
-pi="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 claude="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 caveman="${OPENCODE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
 commands=(plan export-plan implement review-again draft-pr)
@@ -23,12 +22,6 @@ printf 'OpenCode:\n'
 report "$opencode" opencode.jsonc AGENTS.md skills/explore/SKILL.md skills/review/SKILL.md
 for command in "${commands[@]}"; do
   report "$opencode" "commands/$command.md"
-done
-
-printf 'Pi:\n'
-report "$pi" AGENTS.md extensions/multi-agent-dev-workflow.ts
-for command in "${commands[@]}"; do
-  report "$pi" "prompts/$command.md"
 done
 
 printf 'Legacy Claude Code:\n'

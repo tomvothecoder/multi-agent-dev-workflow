@@ -25,28 +25,37 @@ CLAUDE_TEMPLATES = <<~DIGESTS.lines.group_by { |line| line.split.first }.transfo
   skills/review/SKILL.md bdb7435113579223a13a23f945db12fb32632a6575f06c8d2ee8298e0369b058
 DIGESTS
 
-def uninstall_claude(apply_changes:)
-  configured = ENV['CLAUDE_CONFIG_DIR']
-  root = File.expand_path(configured.nil? || configured.empty? ? File.join(Dir.home, '.claude') : configured)
+OPENCODE_TEMPLATES = %w[
+  AGENTS.md opencode.jsonc skills/explore/SKILL.md skills/review/SKILL.md
+  commands/plan.md commands/export-plan.md commands/implement.md commands/review-again.md commands/draft-pr.md
+].freeze
+
+def config_root(variable, fallback)
+  configured = ENV[variable]
+  File.expand_path(configured.nil? || configured.empty? ? File.join(Dir.home, fallback) : configured)
+end
+
+def uninstall_templates(root, files, label:, apply_changes:, skip: [])
   if File.symlink?(root) || (File.exist?(root) && !File.directory?(root))
-    warn "Preserved unsafe Claude Code configuration path: #{root}"
+    warn "Preserved unsafe #{label} configuration path: #{root}"
     return
   end
 
-  CLAUDE_TEMPLATES.each do |relative, digests|
+  files.each do |relative|
     path = File.join(root, relative)
+    next if skip.include?(path)
     parent = File.dirname(path)
     until parent == root || File.symlink?(parent) || (File.exist?(parent) && !File.directory?(parent))
       parent = File.dirname(parent)
     end
     if parent != root || File.symlink?(path) || (File.exist?(path) && !File.file?(path))
-      warn "Preserved unsafe Claude Code path: #{path}"
+      warn "Preserved unsafe #{label} path: #{path}"
     elsif File.file?(path)
-      if digests.include?(Digest::SHA256.file(path).hexdigest)
+      if yield(relative, path)
         File.unlink(path) if apply_changes
         puts "#{apply_changes ? 'Removed' : 'Would remove'} #{path}"
       else
-        warn "Preserved #{path}; it does not exactly match a retired template. Review manually."
+        warn "Preserved #{path}; it does not exactly match a #{label} template. Review manually."
       end
     end
   end
@@ -55,9 +64,18 @@ end
 begin
   abort 'Usage: uninstall-legacy.rb [--apply]' unless ARGV.empty? || ARGV == ['--apply']
   apply_changes = ARGV == ['--apply']
-  Caveman.uninstall(apply_changes: apply_changes)
-  uninstall_claude(apply_changes: apply_changes)
+  caveman_paths = Caveman.uninstall(apply_changes: apply_changes)
+  uninstall_templates(config_root('CLAUDE_CONFIG_DIR', '.claude'), CLAUDE_TEMPLATES.keys,
+                      label: 'Claude Code', apply_changes: apply_changes) do |relative, path|
+    CLAUDE_TEMPLATES.fetch(relative).include?(Digest::SHA256.file(path).hexdigest)
+  end
+  # Leave files edited by Caveman cleanup for a later run so preview and apply agree.
+  uninstall_templates(config_root('OPENCODE_CONFIG_DIR', '.config/opencode'), OPENCODE_TEMPLATES,
+                      label: 'OpenCode', apply_changes: apply_changes, skip: caveman_paths) do |relative, path|
+    template = File.expand_path(relative == 'AGENTS.md' ? '../AGENTS.md' : "opencode/#{relative}", __dir__)
+    !File.identical?(path, template) && FileUtils.compare_file(path, template)
+  end
   puts 'Preview only. Run make uninstall APPLY=1 to apply.' unless apply_changes
 rescue StandardError => error
-  abort "Legacy cleanup failed: #{error.message}"
+  abort "Cleanup failed: #{error.message}"
 end

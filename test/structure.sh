@@ -106,7 +106,7 @@ make -s -C "$CHECK_DIR" > "$CHECK_DIR/help"
 for section in Installation Updates 'Optional profiles' Validation; do
   rg -Fxq "$section:" "$CHECK_DIR/help"
 done
-for target in update-all update-skills update-commands update-skills-commands install-pi install-pi-instructions install-pi-commands install-pi-workflow install-lazygit setup-lazygit lazygit-test; do
+for target in update-all update-skills update-commands update-skills-commands install-lazygit setup-lazygit lazygit-test; do
   rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"
 done
 rg -q '^  status[[:space:]]' "$CHECK_DIR/help"
@@ -115,69 +115,18 @@ for target in install-opencode-config update-opencode-sections install-claude up
   if make -n -C "$CHECK_DIR" "$target" >"$CHECK_DIR/error" 2>&1; then exit 1; fi
   if rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"; then exit 1; fi
 done
-PI_TEST_HOME="$CHECK_DIR/pi home"
-PI_PROMPTS="$PI_TEST_HOME/.pi/agent/prompts"
-HOME="$PI_TEST_HOME" PI_CODING_AGENT_DIR= make -s -C "$ROOT" install-pi-commands >/dev/null
-for command in plan export-plan implement review-again draft-pr; do
-  cmp "$ROOT/global/opencode/commands/$command.md" "$PI_PROMPTS/$command.md"
-done
-PI_CUSTOM_DIR="$CHECK_DIR/custom pi"
-mkdir -p "$PI_CUSTOM_DIR/prompts"
-printf 'custom plan\n' > "$PI_CUSTOM_DIR/prompts/plan.md"
-ln -s missing.md "$PI_CUSTOM_DIR/prompts/draft-pr.md"
-PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi-commands >/dev/null
-rg -Fxq 'custom plan' "$PI_CUSTOM_DIR/prompts/plan.md"
-test "$(readlink "$PI_CUSTOM_DIR/prompts/draft-pr.md")" = missing.md
-test ! -e "$PI_CUSTOM_DIR/prompts/missing.md"
-cmp "$ROOT/global/opencode/commands/implement.md" "$PI_CUSTOM_DIR/prompts/implement.md"
-
-PI_EXTENSION="$PI_CUSTOM_DIR/extensions/multi-agent-dev-workflow.ts"
-test ! -e "$PI_EXTENSION"
-PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi-workflow >/dev/null
-cmp "$ROOT/global/pi/workflow.ts" "$PI_EXTENSION"
-printf 'custom extension\n' > "$PI_EXTENSION"
-PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi-workflow >/dev/null
-rg -Fxq 'custom extension' "$PI_EXTENSION"
-
-PI_INSTRUCTIONS="$PI_CUSTOM_DIR/AGENTS.md"
-PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi-instructions >/dev/null
-cmp "$ROOT/AGENTS.md" "$PI_INSTRUCTIONS"
-printf 'custom instructions\n' > "$PI_INSTRUCTIONS"
-PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi-instructions >/dev/null
-rg -Fxq 'custom instructions' "$PI_INSTRUCTIONS"
-
 # Report custom destinations without altering existing files or creating missing ones.
 STATUS_OPENCODE="$CHECK_DIR/custom opencode"
 STATUS_CLAUDE="$CHECK_DIR/custom claude"
 mkdir -p "$STATUS_OPENCODE" "$STATUS_CLAUDE"
 printf 'custom settings\n' > "$STATUS_CLAUDE/settings.json"
-OPENCODE_CONFIG_DIR="$STATUS_OPENCODE" PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" CLAUDE_CONFIG_DIR="$STATUS_CLAUDE" \
+OPENCODE_CONFIG_DIR="$STATUS_OPENCODE" CLAUDE_CONFIG_DIR="$STATUS_CLAUDE" \
   make -s -C "$ROOT" status > "$CHECK_DIR/status"
-grep -Fxq "  Present  $PI_INSTRUCTIONS" "$CHECK_DIR/status"
-grep -Fxq "  Missing  $PI_CUSTOM_DIR/prompts/draft-pr.md" "$CHECK_DIR/status"
 grep -Fxq "  Missing  $STATUS_OPENCODE/opencode.jsonc" "$CHECK_DIR/status"
 grep -Fxq "  Missing  $STATUS_OPENCODE/.caveman-install.json" "$CHECK_DIR/status"
 grep -Fxq "  Present  $STATUS_CLAUDE/settings.json" "$CHECK_DIR/status"
 rg -Fxq 'custom settings' "$STATUS_CLAUDE/settings.json"
 test ! -e "$STATUS_OPENCODE/opencode.jsonc"
-
-# Refresh rejects linked files before replacing any other component.
-if PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi >"$CHECK_DIR/error" 2>&1; then exit 1; fi
-rg -Fq "Cannot refresh Pi file: $PI_CUSTOM_DIR/prompts/draft-pr.md" "$CHECK_DIR/error"
-rg -Fxq 'custom instructions' "$PI_INSTRUCTIONS"
-rm "$PI_CUSTOM_DIR/prompts/draft-pr.md"
-printf '{"unrelated":true}\n' > "$PI_CUSTOM_DIR/settings.json"
-PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi >/dev/null
-cmp "$ROOT/AGENTS.md" "$PI_INSTRUCTIONS"
-cmp "$ROOT/global/pi/workflow.ts" "$PI_EXTENSION"
-for command in plan export-plan implement review-again draft-pr; do
-  cmp "$ROOT/global/opencode/commands/$command.md" "$PI_CUSTOM_DIR/prompts/$command.md"
-done
-rg -Fxq '{"unrelated":true}' "$PI_CUSTOM_DIR/settings.json"
-
-# A clean install uses the default Pi directory.
-HOME="$CHECK_DIR/fresh pi home" PI_CODING_AGENT_DIR= make -s -C "$ROOT" install-pi >/dev/null
-cmp "$ROOT/AGENTS.md" "$CHECK_DIR/fresh pi home/.pi/agent/AGENTS.md"
 
 mkdir -p "$CHECK_DIR/global"
 cat > "$CHECK_DIR/global/sync-opencode-config-sections.py" <<'EOF'
