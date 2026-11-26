@@ -109,6 +109,7 @@ done
 for target in update-all update-skills update-commands update-skills-commands install-pi install-pi-instructions install-pi-commands install-pi-workflow install-lazygit setup-lazygit lazygit-test; do
   rg -q "^  $target[[:space:]]" "$CHECK_DIR/help"
 done
+rg -q '^  status[[:space:]]' "$CHECK_DIR/help"
 rg -q '^  uninstall[[:space:]]' "$CHECK_DIR/help"
 for target in install-opencode-config update-opencode-sections install-claude update-claude-all install-caveman update-caveman; do
   if make -n -C "$CHECK_DIR" "$target" >"$CHECK_DIR/error" 2>&1; then exit 1; fi
@@ -144,6 +145,21 @@ cmp "$ROOT/AGENTS.md" "$PI_INSTRUCTIONS"
 printf 'custom instructions\n' > "$PI_INSTRUCTIONS"
 PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi-instructions >/dev/null
 rg -Fxq 'custom instructions' "$PI_INSTRUCTIONS"
+
+# Report custom destinations without altering existing files or creating missing ones.
+STATUS_OPENCODE="$CHECK_DIR/custom opencode"
+STATUS_CLAUDE="$CHECK_DIR/custom claude"
+mkdir -p "$STATUS_OPENCODE" "$STATUS_CLAUDE"
+printf 'custom settings\n' > "$STATUS_CLAUDE/settings.json"
+OPENCODE_CONFIG_DIR="$STATUS_OPENCODE" PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" CLAUDE_CONFIG_DIR="$STATUS_CLAUDE" \
+  make -s -C "$ROOT" status > "$CHECK_DIR/status"
+grep -Fxq "  Present  $PI_INSTRUCTIONS" "$CHECK_DIR/status"
+grep -Fxq "  Missing  $PI_CUSTOM_DIR/prompts/draft-pr.md" "$CHECK_DIR/status"
+grep -Fxq "  Missing  $STATUS_OPENCODE/opencode.jsonc" "$CHECK_DIR/status"
+grep -Fxq "  Missing  $STATUS_OPENCODE/.caveman-install.json" "$CHECK_DIR/status"
+grep -Fxq "  Present  $STATUS_CLAUDE/settings.json" "$CHECK_DIR/status"
+rg -Fxq 'custom settings' "$STATUS_CLAUDE/settings.json"
+test ! -e "$STATUS_OPENCODE/opencode.jsonc"
 
 # Refresh rejects linked files before replacing any other component.
 if PI_CODING_AGENT_DIR="$PI_CUSTOM_DIR" make -s -C "$ROOT" install-pi >"$CHECK_DIR/error" 2>&1; then exit 1; fi

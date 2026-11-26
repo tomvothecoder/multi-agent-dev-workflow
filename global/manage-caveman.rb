@@ -216,7 +216,7 @@ module Caveman
     root = File.expand_path(configured.nil? || configured.empty? ? runtime : configured)
     manifest = File.join(root, MANIFEST)
     unless File.exist?(manifest) || File.symlink?(manifest)
-      puts "No managed Caveman installation found in #{root}."
+      puts "Skipping Caveman: no managed installation in #{root}. Continuing with Claude Code cleanup."
       return
     end
 

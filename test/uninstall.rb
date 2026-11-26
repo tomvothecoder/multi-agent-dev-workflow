@@ -85,4 +85,16 @@ Dir.mktmpdir do |home|
   check(File.read(default_settings) == shared_settings && File.read(untracked) == 'unowned plugin', 'Incorrect default-path cleanup')
 end
 
+Dir.mktmpdir do |home|
+  env = { 'HOME' => home, 'CLAUDE_CONFIG_DIR' => '', 'OPENCODE_CONFIG_DIR' => '', 'XDG_CONFIG_HOME' => nil }
+  owned = write_file(home, '.claude/settings.json', "{\n  \"includeGitInstructions\": false\n}\n")
+  output = run_make(env, 'uninstall')
+  check(output.include?('Skipping Caveman:') && output.include?("Would remove #{owned}"), output)
+  check(File.exist?(owned), 'Claude-only preview removed settings')
+
+  output = run_make(env, 'uninstall', 'APPLY=1')
+  check(output.include?('Skipping Caveman:') && output.include?("Removed #{owned}"), output)
+  check(!File.exist?(owned), 'Claude-only uninstall left managed settings')
+end
+
 puts 'Legacy cleanup tests passed.'

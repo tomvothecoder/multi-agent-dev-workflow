@@ -15,6 +15,7 @@ help:
 		'  install-pi-workflow   Install Pi plan mode and independent review' \
 		'  install-lazygit       Install Lazygit (Linux pin: LAZYGIT_VERSION=0.66.0)' \
 		'  setup-lazygit         Suggest ~/worktrees for new Lazygit worktrees' \
+		'  status                List present and missing workflow and legacy files' \
 		'  uninstall             Preview legacy Claude Code and Caveman cleanup (APPLY=1 to remove)' \
 		'' 'Updates:' \
 		'  update-all            Run the OpenCode update sequence, stopping on failure' \
@@ -66,7 +67,10 @@ install-lazygit:
 setup-lazygit:
 	@./global/setup-lazygit.sh
 
-.PHONY: uninstall
+.PHONY: status uninstall
+
+status:
+	@bash ./global/status.sh
 
 uninstall:
 	@ruby ./global/uninstall-legacy.rb $(if $(filter 1,$(APPLY)),--apply)

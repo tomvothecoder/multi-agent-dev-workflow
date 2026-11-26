@@ -184,6 +184,10 @@ make update-opencode-instructions
 
 `make update-opencode` upgrades OpenCode, refreshes models, and syncs all three configuration sections. `make update-opencode-instructions` creates or updates `${OPENCODE_CONFIG_DIR:-~/.config/opencode}/AGENTS.md` from this repository's template. The configuration commands replace only `provider.livai.models`, `agent`, or `permission`; when `provider.livai` is absent, its model section is skipped. All other settings in your `opencode.jsonc` remain unchanged.
 
+## Check installation status
+
+Run `make status` to list present and missing files for OpenCode, Pi, and the retired Claude Code and Caveman integrations. It does not modify files or verify their contents or ownership.
+
 ## Clean up retired integrations
 
 ```bash
